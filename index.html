@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SkincareShop — Premium Skincare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:   #0A0A0A;
+      --white:   #FFFFFF;
+      --cream:   #F7F5F2;
+      --warm:    #EDE9E3;
+      --gray:    #888;
+      --border:  #E0DDD8;
+      --serif:   'Cormorant Garamond', Georgia, serif;
+      --sans:    'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--white);
+      color: var(--black);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 3rem;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--black);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex; gap: 2.5rem; list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--gray);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 400;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--black); }
+
+    .nav-icons { display: flex; gap: 1.2rem; }
+    .nav-icons span { cursor: pointer; font-size: 1rem; color: var(--gray); transition: color 0.2s; }
+    .nav-icons span:hover { color: var(--black); }
+
+    /* ── HERO ── */
+    .hero {
+      margin-top: 60px;
+      height: calc(100vh - 60px);
+      background: var(--cream);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+
+    .hero-left {
+      display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 5rem 4rem 5rem 5rem;
+    }
+
+    .hero-tag {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-title {
+      font-family: var(--serif);
+      font-size: clamp(3rem, 5vw, 5rem);
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      color: var(--black);
+    }
+
+    .hero-title em { font-style: italic; }
+
+    .hero-desc {
+      font-size: 0.85rem;
+      color: var(--gray);
+      max-width: 320px;
+      line-height: 1.8;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-btns { display: flex; gap: 1rem; align-items: center; }
+
+    .btn-dark {
+      background: var(--black); color: var(--white);
+      padding: 0.85rem 2rem;
+      font-family: var(--sans);
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: none; cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: opacity 0.2s;
+    }
+    .btn-dark:hover { opacity: 0.75; }
+
+    .btn-ghost {
+      background: transparent; color: var(--black);
+      padding: 0.85rem 2rem;
+      font-family: var(--sans);
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: 1px solid var(--black);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover { background: var(--black); color: var(--white); }
+
+    .hero-right {
+      background: var(--warm);
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+
+    .hero-img-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 1rem;
+      background: linear-gradient(160deg, #E8E4DC 0%, #D4CFC6 100%);
+    }
+
+    .hero-bottle {
+      font-size: 8rem;
+      filter: grayscale(1);
+      opacity: 0.6;
+    }
+
+    .hero-img-label {
+      font-family: var(--serif);
+      font-size: 0.85rem;
+      color: var(--gray);
+      letter-spacing: 0.1em;
+      font-style: italic;
+    }
+
+    /* ── MARQUEE ── */
+    .marquee-strip {
+      background: var(--black); color: var(--white);
+      padding: 0.85rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .marquee-inner {
+      display: inline-flex; gap: 3rem;
+      animation: marquee 20s linear infinite;
+    }
+
+    .marquee-item {
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .marquee-dot { color: rgba(255,255,255,0.3); }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* ── SECTION WRAPPER ── */
+    .section { padding: 6rem 5rem; }
+    .section-sm { padding: 4rem 5rem; }
+
+    .section-header {
+      display: flex; align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 3rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-size: 2.2rem;
+      font-weight: 300;
+    }
+
+    .section-link {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray);
+      text-decoration: none;
+      border-bottom: 1px solid var(--gray);
+      padding-bottom: 1px;
+      transition: color 0.2s;
+    }
+    .section-link:hover { color: var(--black); border-color: var(--black); }
+
+    /* ── FILTER CHIPS ── */
+    .filter-bar {
+      display: flex; gap: 0.5rem; flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    .chip {
+      padding: 0.4rem 1rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--gray);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--sans);
+    }
+    .chip.active, .chip:hover {
+      background: var(--black);
+      color: var(--white);
+      border-color: var(--black);
+    }
+
+    /* ── PRODUCT GRID ── */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+    }
+
+    .product-card {
+      cursor: pointer;
+      group: true;
+    }
+
+    .product-card:hover .product-img-wrap { transform: scale(1.02); }
+
+    .product-img-wrap {
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: var(--cream);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      transition: transform 0.4s ease;
+      margin-bottom: 1rem;
+    }
+
+    .product-emoji { font-size: 4rem; filter: grayscale(0.3); }
+
+    .product-badge {
+      position: absolute; top: 0.75rem; left: 0.75rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--black);
+      color: var(--white);
+      padding: 0.25rem 0.5rem;
+    }
+
+    .product-badge.sale { background: #8B6F5E; }
+    .product-badge.new  { background: #4A6741; }
+
+    .product-cat {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 0.3rem;
+    }
+
+    .product-name {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 400;
+      margin-bottom: 0.4rem;
+      color: var(--black);
+    }
+
+    .product-price {
+      font-size: 0.8rem;
+      color: var(--black);
+    }
+
+    .product-price s { color: var(--gray); margin-right: 0.4rem; }
+
+    .product-add {
+      margin-top: 0.6rem;
+      width: 100%;
+      padding: 0.6rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--black);
+    }
+    .product-add:hover { background: var(--black); color: var(--white); border-color: var(--black); }
+
+    /* ── PROMISE SECTION ── */
+    .promise-section {
+      background: var(--cream);
+      padding: 6rem 5rem;
+    }
+
+    .promise-title {
+      font-family: var(--serif);
+      font-size: 2.5rem;
+      font-weight: 300;
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .promise-sub {
+      text-align: center;
+      color: var(--gray);
+      font-size: 0.82rem;
+      max-width: 480px;
+      margin: 0 auto 3.5rem;
+      line-height: 1.8;
+    }
+
+    .promise-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .promise-item {
+      text-align: center;
+    }
+
+    .promise-icon {
+      width: 48px; height: 48px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 1.2rem;
+      color: var(--gray);
+    }
+
+    .promise-label {
+      font-family: var(--serif);
+      font-size: 1rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .promise-desc {
+      font-size: 0.75rem;
+      color: var(--gray);
+      line-height: 1.7;
+    }
+
+    /* ── ARCHITECTURE ── */
+    .arch-section {
+      background: var(--black);
+      color: var(--white);
+      padding: 6rem 5rem;
+    }
+
+    .arch-title {
+      font-family: var(--serif);
+      font-size: 2.2rem;
+      font-weight: 300;
+      color: var(--white);
+      margin-bottom: 0.5rem;
+    }
+
+    .arch-sub {
+      color: rgba(255,255,255,0.4);
+      font-size: 0.78rem;
+      margin-bottom: 3rem;
+      letter-spacing: 0.05em;
+    }
+
+    .arch-flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .arch-col {
+      padding: 2rem 1.5rem;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+    .arch-col:last-child { border-right: none; }
+
+    .arch-col-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 1.2rem;
+    }
+
+    .arch-node {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.4;
+    }
+
+    .arch-node.highlight {
+      border-color: rgba(255,255,255,0.25);
+      color: var(--white);
+    }
+
+    .mermaid-box {
+      margin-top: 3rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 2rem;
+    }
+
+    .mermaid-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 1rem;
+    }
+
+    .mermaid-code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.9;
+      white-space: pre;
+    }
+
+    /* ── CHECKLIST ── */
+    .checklist-section { padding: 6rem 5rem; background: var(--white); }
+
+    .cl-title {
+      font-family: var(--serif);
+      font-size: 2.2rem;
+      font-weight: 300;
+      margin-bottom: 0.4rem;
+    }
+
+    .cl-sub {
+      color: var(--gray);
+      font-size: 0.78rem;
+      margin-bottom: 3rem;
+    }
+
+    .cl-list { border-top: 1px solid var(--border); }
+
+    .cl-item {
+      display: grid;
+      grid-template-columns: 2rem 1fr auto auto;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 1.2rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cl-num {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      color: var(--gray);
+    }
+
+    .cl-text { font-size: 0.85rem; }
+    .cl-evidence { font-size: 0.72rem; color: var(--gray); }
+
+    .cl-score {
+      font-size: 0.7rem;
+      color: var(--gray);
+      letter-spacing: 0.05em;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .cl-status-done {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--black);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 0.6rem;
+      flex-shrink: 0;
+    }
+
+    .cl-status-todo {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--black);
+      color: rgba(255,255,255,0.35);
+      padding: 3rem 5rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .footer-logo {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      color: var(--white);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .footer-info {
+      font-size: 0.72rem;
+      line-height: 1.8;
+      text-align: right;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; height: auto; }
+      .hero-right { height: 50vw; }
+      .hero-left { padding: 3rem 1.5rem; }
+      .section, .promise-section, .arch-section, .checklist-section { padding: 4rem 1.5rem; }
+      .products-grid { grid-template-columns: repeat(2, 1fr); }
+      .promise-grid { grid-template-columns: repeat(2, 1fr); }
+      .arch-flow { grid-template-columns: 1fr; }
+      .arch-col { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.1); }
+      footer { grid-template-columns: 1fr; }
+      .footer-info { text-align: left; }
+      .cl-item { grid-template-columns: 2rem 1fr; }
+      .cl-evidence, .cl-score { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">SkincareShop</a>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active">Home</a></li>
+    <li><a href="pages/products.html">Shop</a></li>
+    <li><a href="markdown.html">Docs</a></li>
+    <li><a href="#architecture">System</a></li>
+    <li><a href="#checklist">Workshop</a></li>
+  </ul>
+  <div class="nav-icons">
+    <span title="Search">🔍</span>
+    <span title="Account" onclick="location.href='pages/login.html'" style="cursor:pointer;">👤</span>
+    <span title="Cart" onclick="location.href='pages/cart.html'" style="cursor:pointer; position:relative;">🛒<span class="cart-count" style="position:absolute; top:-6px; right:-9px; background:#0A0A0A; color:#fff; font-size:0.55rem; min-width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--sans);">0</span></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <p class="hero-tag">Premium Skincare Collection</p>
+    <h1 class="hero-title">Reveal Your<br/><em>Natural</em><br/>Radiance</h1>
+    <p class="hero-desc">ผลิตภัณฑ์ดูแลผิวคุณภาพสูง ผสานส่วนผสมจากธรรมชาติ และงานวิจัยทางวิทยาศาสตร์ เพื่อผิวที่ดีที่สุดของคุณ</p>
+    <div class="hero-btns">
+      <a href="#shop" class="btn-dark">Shop Now</a>
+      <a href="#promise" class="btn-ghost">Our Story</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-img-placeholder">
+      <div class="hero-bottle">🧴</div>
+      <p class="hero-img-label">Essence Lansite · Premium Formula</p>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip">
+  <div class="marquee-inner">
+    <span class="marquee-item">Natural Ingredients</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Dermatologist Tested</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Cruelty Free</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Visible Results</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Science-Backed</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Natural Ingredients</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Dermatologist Tested</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Cruelty Free</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Visible Results</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Science-Backed</span><span class="marquee-dot">·</span>
+  </div>
+</div>
+
+<!-- SHOP -->
+<section class="section" id="shop">
+  <div class="section-header">
+    <h2 class="section-title">Shop All Products</h2>
+    <a href="pages/products.html" class="section-link">View All →</a>
+  </div>
+
+  <div class="filter-bar">
+    <button class="chip active">All</button>
+    <button class="chip">Serums</button>
+    <button class="chip">Moisturizers</button>
+    <button class="chip">Oils</button>
+    <button class="chip">Cleansers</button>
+    <button class="chip">Mists</button>
+    <button class="chip">Masks</button>
+  </div>
+
+  <div class="products-grid">
+    <div class="product-card">
+      <div class="product-img-wrap" style="background:#EAE6E0;">
+        <span class="product-badge">Bestseller</span>
+        <span class="product-emoji">💧</span>
+      </div>
+      <p class="product-cat">Serums</p>
+      <p class="product-name">Hydrating Serum</p>
+      <p class="product-price">฿2,380</p>
+      <button class="product-add">Add to Cart</button>
+    </div>
+    <div class="product-card">
+      <div class="product-img-wrap" style="background:#E8E4DC;">
+        <span class="product-emoji">🫧</span>
+      </div>
+      <p class="product-cat">Moisturizers</p>
+      <p class="product-name">Renewal Cream</p>
+      <p class="product-price">฿2,890</p>
+      <button class="product-add">Add to Cart</button>
+    </div>
+    <div class="product-card">
+      <div class="product-img-wrap" style="background:#EDE5DC;">
+        <span class="product-badge sale">Sale</span>
+        <span class="product-emoji">✨</span>
+      </div>
+      <p class="product-cat">Oils</p>
+      <p class="product-name">Radiance Oil</p>
+      <p class="product-price"><s>฿3,200</s>฿2,490</p>
+      <button class="product-add">Add to Cart</button>
+    </div>
+    <div class="product-card">
+      <div class="product-img-wrap" style="background:#F0ECE8;">
+        <span class="product-emoji">🌿</span>
+      </div>
+      <p class="product-cat">Cleansers</p>
+      <p class="product-name">Gentle Cleanser</p>
+      <p class="product-price">฿1,490</p>
+      <button class="product-add">Add to Cart</button>
+    </div>
+    <div class="product-card">
+      <div class="product-img-wrap" style="background:#E6EAE4;">
+        <span class="product-badge new">New</span>
+        <span class="product-emoji">💦</span>
+      </div>
+      <p class="product-cat">Mists</p>
+      <p class="product-name">Hydrating Mist</p>
+      <p class="product-price">฿1,290</p>
+      <button class="product-add">Add to Cart</button>
+    </div>
+    <div class="product-card">
+      <div class="product-img-wrap" style="background:#EDE8E4;">
+        <span class="product-emoji">🎭</span>
+      </div>
+      <p class="product-cat">Masks</p>
+      <p class="product-name">Glow Mask</p>
+      <p class="product-price">฿1,890</p>
+      <button class="product-add">Add to Cart</button>
+    </div>
+  </div>
+</section>
+
+<!-- PROMISE -->
+<div class="promise-section" id="promise">
+  <h2 class="promise-title">The SkincareShop Promise</h2>
+  <p class="promise-sub">เราเชื่อในความโปร่งใส คุณภาพ และผลลัพธ์ที่มองเห็นได้จริง ทุกผลิตภัณฑ์ถูกคัดสรรและทดสอบอย่างพิถีพิถัน</p>
+  <div class="promise-grid">
+    <div class="promise-item">
+      <div class="promise-icon">🌱</div>
+      <p class="promise-label">Natural Ingredients</p>
+      <p class="promise-desc">ส่วนผสมจากธรรมชาติ จากพืชและแร่ธาตุที่ผ่านการคัดสรร</p>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">🔬</div>
+      <p class="promise-label">Dermatologist Tested</p>
+      <p class="promise-desc">ผ่านการทดสอบทางคลินิก ปลอดภัยสำหรับทุกสภาพผิว</p>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">⭐</div>
+      <p class="promise-label">Visible Results</p>
+      <p class="promise-desc">เห็นผลภายใน 2–4 สัปดาห์ของการใช้อย่างสม่ำเสมอ</p>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">🐰</div>
+      <p class="promise-label">Cruelty Free</p>
+      <p class="promise-desc">ไม่ทดลองกับสัตว์ สูตร Vegan-friendly ทุกผลิตภัณฑ์</p>
+    </div>
+  </div>
+</div>
+
+<!-- SYSTEM ARCHITECTURE -->
+<div class="arch-section" id="architecture">
+  <h2 class="arch-title">System Architecture</h2>
+  <p class="arch-sub">CSI204 · Workshop #1 · โครงสร้างระบบ SkincareShop ออกแบบตามหลัก Separation of Concerns</p>
+
+  <div class="arch-flow">
+    <div class="arch-col">
+      <p class="arch-col-label">Client Layer</p>
+      <div class="arch-node highlight">Web Browser<br/>HTML / CSS / JS</div>
+      <div class="arch-node">Mobile Browser<br/>Responsive</div>
+    </div>
+    <div class="arch-col">
+      <p class="arch-col-label">Gateway Layer</p>
+      <div class="arch-node highlight">GitHub Pages<br/>Frontend Hosting</div>
+      <div class="arch-node">API Gateway<br/>Auth · Routing</div>
+    </div>
+    <div class="arch-col">
+      <p class="arch-col-label">Backend Layer</p>
+      <div class="arch-node">User Service</div>
+      <div class="arch-node">Product Service</div>
+      <div class="arch-node">Order Service</div>
+      <div class="arch-node highlight">Payment Service</div>
+    </div>
+    <div class="arch-col">
+      <p class="arch-col-label">Data Layer</p>
+      <div class="arch-node highlight">MySQL<br/>Primary DB</div>
+      <div class="arch-node">Redis<br/>Cache · Session</div>
+    </div>
+    <div class="arch-col">
+      <p class="arch-col-label">External Services</p>
+      <div class="arch-node">PromptPay /<br/>Credit Card</div>
+      <div class="arch-node">LINE Notify API</div>
+      <div class="arch-node">Email (SMTP)</div>
+    </div>
+  </div>
+
+  <div class="mermaid-box">
+    <p class="mermaid-label">Mermaid Diagram — วางใน README.md บน GitHub</p>
+    <pre class="mermaid-code">```mermaid
+graph TD
+    A[👤 ผู้ใช้งาน] --> B[Frontend HTML/CSS/JS]
+    B --> C[GitHub Pages]
+    B --> D[API Gateway]
+    D --> E[User Service]
+    D --> F[Product Service]
+    D --> G[Order Service]
+    D --> H[Payment Service]
+    E --> I[(MySQL DB)]
+    F --> I
+    G --> I
+    H --> J[PromptPay / Credit Card]
+    G --> K[LINE Notify API]
+    I --> L[(Redis Cache)]
+```</pre>
+  </div>
+</div>
+
+<!-- CHECKLIST -->
+<div class="checklist-section" id="checklist">
+  <h2 class="cl-title">Workshop #1 Checklist</h2>
+  <p class="cl-sub">Project Documentation with GitHub · 2 คะแนน</p>
+
+  <div class="cl-list">
+    <div class="cl-item">
+      <div class="cl-status-done">✓</div>
+      <span class="cl-num">01</span>
+      <span class="cl-text">สร้าง GitHub Repository ถูกต้อง</span>
+      <span class="cl-evidence">URL Repository</span>
+      <span class="cl-score">0.1 pts</span>
+    </div>
+    <div class="cl-item">
+      <div class="cl-status-done">✓</div>
+      <span class="cl-num">02</span>
+      <span class="cl-text">ใช้ Sourcetree และมี Commit History</span>
+      <span class="cl-evidence">Screenshot Sourcetree</span>
+      <span class="cl-score">0.2 pts</span>
+    </div>
+    <div class="cl-item">
+      <div class="cl-status-done">✓</div>
+      <span class="cl-num">03</span>
+      <span class="cl-text">การใช้งาน Markdown จัดทำเอกสาร README.md</span>
+      <span class="cl-evidence">README แสดงบน GitHub</span>
+      <span class="cl-score">0.5 pts</span>
+    </div>
+    <div class="cl-item">
+      <div class="cl-status-done">✓</div>
+      <span class="cl-num">04</span>
+      <span class="cl-text">จัดทำเอกสาร Analysis & Design</span>
+      <span class="cl-evidence">Markdown + Screenshot</span>
+      <span class="cl-score">0.5 pts</span>
+    </div>
+    <div class="cl-item">
+      <div class="cl-status-done">✓</div>
+      <span class="cl-num">05</span>
+      <span class="cl-text">จัดทำภาพ System Architecture ด้วย Mermaid Diagram</span>
+      <span class="cl-evidence">รูปภาพ Diagram</span>
+      <span class="cl-score">0.5 pts</span>
+    </div>
+    <div class="cl-item">
+      <div class="cl-status-done">✓</div>
+      <span class="cl-num">06</span>
+      <span class="cl-text">GitHub Pages เผยแพร่ได้จริง</span>
+      <span class="cl-evidence"><a href="https://bedyner.github.io/SkincareShop/" target="_blank" style="color:inherit;">bedyner.github.io/SkincareShop</a></span>
+      <span class="cl-score">0.2 pts</span>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <p class="footer-logo">SkincareShop</p>
+    <p style="font-size:0.72rem; margin-top:0.5rem;">Premium Skincare Online Store</p>
+    <div style="display:flex; gap:1.8rem; margin-top:1.2rem;">
+      <a href="index.html" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Home</a>
+      <a href="pages/products.html" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Shop</a>
+      <a href="pages/cart.html" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Cart</a>
+      <a href="markdown.html" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Docs</a>
+      <a href="pages/login.html" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Account</a>
+    </div>
+  </div>
+  <div class="footer-info">
+    CSI204 Digital Platform for Software Development<br/>
+    Workshop #1 · Project Documentation with GitHub<br/>
+    <span style="font-size:0.65rem; opacity:0.5;">w1_T001_67154712_วิชญาดา-กิตตินัฏพงศ์</span>
+  </div>
+</footer>
+
+<!-- Shared cart + interaction logic -->
+<script src="js/main.js"></script>
+</body>
+</html>
