@@ -278,6 +278,7 @@
     }
 
     .product-emoji { font-size: 4rem; filter: grayscale(0.3); }
+    .product-img { width:100%; height:100%; object-fit:cover; display:block; }
 
     .product-badge {
       position: absolute; top: 0.75rem; left: 0.75rem;
@@ -648,7 +649,8 @@
     <div class="product-card">
       <div class="product-img-wrap" style="background:#EAE6E0;">
         <span class="product-badge">Bestseller</span>
-        <span class="product-emoji">💧</span>
+        <img class="product-img" src="images/products/hydrating-serum.jpg" alt="Hydrating Serum" onerror="if(!this.dataset.p){this.dataset.p=1;this.src=this.src.replace(/\.jpg$/,'.png');}else{this.style.display='none';this.nextElementSibling.style.display='';}">
+        <span class="product-emoji" style="display:none;">💧</span>
       </div>
       <p class="product-cat">Serums</p>
       <p class="product-name">Hydrating Serum</p>
@@ -657,7 +659,8 @@
     </div>
     <div class="product-card">
       <div class="product-img-wrap" style="background:#E8E4DC;">
-        <span class="product-emoji">🫧</span>
+        <img class="product-img" src="images/products/renewal-cream.jpg" alt="Renewal Cream" onerror="if(!this.dataset.p){this.dataset.p=1;this.src=this.src.replace(/\.jpg$/,'.png');}else{this.style.display='none';this.nextElementSibling.style.display='';}">
+        <span class="product-emoji" style="display:none;">🫧</span>
       </div>
       <p class="product-cat">Moisturizers</p>
       <p class="product-name">Renewal Cream</p>
@@ -667,7 +670,8 @@
     <div class="product-card">
       <div class="product-img-wrap" style="background:#EDE5DC;">
         <span class="product-badge sale">Sale</span>
-        <span class="product-emoji">✨</span>
+        <img class="product-img" src="images/products/radiance-oil.jpg" alt="Radiance Oil" onerror="if(!this.dataset.p){this.dataset.p=1;this.src=this.src.replace(/\.jpg$/,'.png');}else{this.style.display='none';this.nextElementSibling.style.display='';}">
+        <span class="product-emoji" style="display:none;">✨</span>
       </div>
       <p class="product-cat">Oils</p>
       <p class="product-name">Radiance Oil</p>
@@ -676,7 +680,8 @@
     </div>
     <div class="product-card">
       <div class="product-img-wrap" style="background:#F0ECE8;">
-        <span class="product-emoji">🌿</span>
+        <img class="product-img" src="images/products/gentle-cleanser.jpg" alt="Gentle Cleanser" onerror="if(!this.dataset.p){this.dataset.p=1;this.src=this.src.replace(/\.jpg$/,'.png');}else{this.style.display='none';this.nextElementSibling.style.display='';}">
+        <span class="product-emoji" style="display:none;">🌿</span>
       </div>
       <p class="product-cat">Cleansers</p>
       <p class="product-name">Gentle Cleanser</p>
@@ -686,7 +691,8 @@
     <div class="product-card">
       <div class="product-img-wrap" style="background:#E6EAE4;">
         <span class="product-badge new">New</span>
-        <span class="product-emoji">💦</span>
+        <img class="product-img" src="images/products/hydrating-mist.jpg" alt="Hydrating Mist" onerror="if(!this.dataset.p){this.dataset.p=1;this.src=this.src.replace(/\.jpg$/,'.png');}else{this.style.display='none';this.nextElementSibling.style.display='';}">
+        <span class="product-emoji" style="display:none;">💦</span>
       </div>
       <p class="product-cat">Mists</p>
       <p class="product-name">Hydrating Mist</p>
@@ -695,7 +701,8 @@
     </div>
     <div class="product-card">
       <div class="product-img-wrap" style="background:#EDE8E4;">
-        <span class="product-emoji">🎭</span>
+        <img class="product-img" src="images/products/glow-mask.jpg" alt="Glow Mask" onerror="if(!this.dataset.p){this.dataset.p=1;this.src=this.src.replace(/\.jpg$/,'.png');}else{this.style.display='none';this.nextElementSibling.style.display='';}">
+        <span class="product-emoji" style="display:none;">🎭</span>
       </div>
       <p class="product-cat">Masks</p>
       <p class="product-name">Glow Mask</p>

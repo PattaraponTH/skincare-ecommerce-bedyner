@@ -1,0 +1,67 @@
+/* SkincareShop — Global Stylesheet
+   CSI204 Workshop #1 | วิชญาดา กิตตินัฏพงศ์ 67154712 T001
+-------------------------------------------------- */
+
+/* ── RESET & ROOT ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:  #0A0A0A;
+  --white:  #FFFFFF;
+  --cream:  #F7F5F2;
+  --warm:   #EDE9E3;
+  --gray:   #888888;
+  --border: #E0DDD8;
+  --serif:  'Cormorant Garamond', Georgia, serif;
+  --sans:   'Inter', sans-serif;
+  --transition: 0.2s ease;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--white); color: var(--black); font-size: 14px; line-height: 1.6; }
+
+/* ── TYPOGRAPHY ── */
+h1, h2, h3, h4 { font-family: var(--serif); font-weight: 300; }
+a { color: inherit; }
+
+/* ── BUTTONS ── */
+.btn-dark {
+  background: var(--black); color: var(--white);
+  padding: 0.85rem 2rem; font-family: var(--sans);
+  font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  border: none; cursor: pointer; text-decoration: none;
+  display: inline-block; transition: opacity var(--transition);
+}
+.btn-dark:hover { opacity: 0.75; }
+
+.btn-ghost {
+  background: transparent; color: var(--black);
+  padding: 0.85rem 2rem; font-family: var(--sans);
+  font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+  border: 1px solid var(--black); cursor: pointer;
+  text-decoration: none; display: inline-block;
+  transition: all var(--transition);
+}
+.btn-ghost:hover { background: var(--black); color: var(--white); }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.2rem 3rem; background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+}
+
+/* ── UTILITIES ── */
+.text-gray   { color: var(--gray); }
+.text-serif  { font-family: var(--serif); }
+.text-upper  { text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.72rem; }
+.border-b    { border-bottom: 1px solid var(--border); }
+.section     { padding: 6rem 5rem; }
+.section-sm  { padding: 4rem 5rem; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .section, .section-sm { padding: 3rem 1.5rem; }
+}
