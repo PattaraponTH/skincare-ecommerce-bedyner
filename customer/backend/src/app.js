@@ -15,8 +15,14 @@ const errorHandler = require('./middlewares/error.middleware');
 const app = express();
 
 // ── Middleware ─────────────────────────────────────────────
-app.use(cors());
+app.use(cors({
+  // อนุญาตทุก origin ในช่วง development
+  // (null = เปิดจาก file://, localhost port ใดก็ได้)
+  origin: (origin, cb) => cb(null, true),
+  credentials: true,
+}));
 app.use(express.json());
+
 
 // ── Swagger UI ─────────────────────────────────────────────
 app.use(
@@ -88,10 +94,20 @@ app.use('/api/orders',   orderRouter);
 app.use('/api/payments', paymentRouter);
 app.use('/api/reviews',  reviewRouter);
 
-// ── 404 Handler ────────────────────────────────────────────
-app.use((_req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
+// ── Serve Customer Frontend (static) ───────────────────────
+// เปิด http://localhost:5000/ ได้เลย
+app.use(express.static(require('path').join(__dirname, '../../frontend')));
+
+// ── 404 Handler (API routes only) ──────────────────────────
+app.use('/api', (_req, res) => {
+  res.status(404).json({ success: false, message: 'API route not found' });
 });
+
+// ── Fallback: serve frontend for all non-API routes ─────────
+app.get('*', (_req, res) => {
+  res.sendFile(require('path').join(__dirname, '../../frontend/index.html'));
+});
+
 
 // ── Global Error Handler ───────────────────────────────────
 app.use(errorHandler);

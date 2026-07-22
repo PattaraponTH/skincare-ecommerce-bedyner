@@ -1,6 +1,6 @@
 const { findOne, create, update } = require('../../config/store');
 
-const PAYMENT_METHODS = ['credit_card', 'qr_code', 'bank_transfer'];
+const PAYMENT_METHODS = ['credit_card', 'qr_code', 'bank_transfer', 'cash_on_delivery'];
 
 /**
  * จำลองการชำระเงิน (Simulation)
@@ -23,6 +23,19 @@ const checkout = (customerId, { orderId, method }) => {
     const err = new Error(`ชำระเงินไม่ได้ (สถานะปัจจุบัน: ${order.status})`);
     err.statusCode = 400;
     throw err;
+  }
+
+  // เก็บเงินปลายทาง: ไม่ต้องมี payment record, แค่ยืนยัน order
+  if (method === 'cash_on_delivery') {
+    update('orders', order.id, { status: 'confirmed', paymentMethod: 'cash_on_delivery' });
+    return {
+      paymentId: null,
+      orderId,
+      method: 'cash_on_delivery',
+      status: 'pending_cod',
+      amount: order.totalAmount,
+      note: 'ชำระเงินเมื่อได้รับสินค้า',
+    };
   }
 
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
