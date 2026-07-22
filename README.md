@@ -12,6 +12,9 @@
 
 **ชื่อกลุ่ม:** GLOWTIME
 
+**ชื่อกลุ่ม:** ......................................
+
+
 **จำนวนสมาชิก:** 5 คน
 
 | ลำดับ | รหัสนักศึกษา | ชื่อ-สกุล | ตำแหน่งในกลุ่ม |
@@ -806,6 +809,7 @@ graph LR
 | Testing Approach | User Acceptance Testing (UAT) — Manual Testing |
 | Deployment / Hosting | Vercel (Frontend), Render (Backend), Railway (MySQL Database), Cloudinary (Product Images) — ทั้งหมดใช้ Free Tier |
 
+
 ---
 
 ## 18. แผนการดำเนินงาน 4 สัปดาห์ (Work Plan)
@@ -818,3 +822,21 @@ graph LR
 | 4 | Testing & Presentation | ทำ UAT แบบ Manual Testing ทุกฟังก์ชัน และเตรียมนำเสนอผลงาน |
 
 ---
+
+
+---
+
+## 18. แผนการดำเนินงาน 4 สัปดาห์ (Work Plan)
+
+| สัปดาห์ | กิจกรรม | รายละเอียดโดยย่อ |
+|---|---|---|
+| 1 | Analysis & Design | จัดทำ Persona, Use Case, Class Diagram, Sequence Diagram, ER Diagram |
+| 2 | Frontend Development | พัฒนาหน้า Home, Search, Product Detail, Cart ด้วย React.js |
+| 3 | Backend & Database Development | พัฒนา REST API ด้วย Node.js/Express และเชื่อมต่อ MySQL |
+| 4 | Testing & Presentation | ทำ UAT แบบ Manual Testing ทุกฟังก์ชัน และเตรียมนำเสนอผลงาน |
+
+---
+
+### หมายเหตุการนำไปใช้
+เอกสารนี้จัดทำขึ้นเพื่อใช้เป็นข้อมูลอ้างอิงประกอบการกรอกแบบฟอร์มขออนุมัติโครงงานกลุ่ม (หน้า 18) ของวิชา CSI204 โดยเนื้อหาทุกหัวข้อสอดคล้องกับขอบเขตขั้นต่ำของระบบ e-Commerce และข้อกำหนดหัวข้อโครงงานกลุ่มตามเอกสารหน้า 17
+
