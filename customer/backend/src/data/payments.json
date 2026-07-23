@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "paymentId": "PAY-20260701-0001",
+    "orderId": "ORD-20260701-0001",
+    "method": "credit_card",
+    "status": "success",
+    "amount": 590.00,
+    "paidAt": "2026-07-01T10:16:00+07:00"
+  }
+]

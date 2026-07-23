@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GLOWTIME — Checkout</title>
+  <meta name="description" content="ชำระเงินและระบุที่อยู่จัดส่ง GLOWTIME"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black:  #0A0A0A;
+      --white:  #FFFFFF;
+      --cream:  #F7F5F2;
+      --warm:   #EDE9E3;
+      --gray:   #888;
+      --border: #E0DDD8;
+      --serif:  'Cormorant Garamond', Georgia, serif;
+      --sans:   'Inter', sans-serif;
+      --green:  #4A6741;
+      --red:    #8B3A3A;
+      --brown:  #8B6F5E;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--sans); background: var(--cream); color: var(--black); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+    /* ── NAV ── */
+    nav {
+      background: rgba(255,255,255,0.97); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 3rem; position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .nav-logo { font-family: var(--serif); font-size: 1.4rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--black); text-decoration: none; }
+    .nav-back { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--gray); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s; }
+    .nav-back:hover { color: var(--black); }
+    .nav-back svg { width: 14px; height: 14px; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 9000;
+      background: var(--black); color: #fff; padding: 0.8rem 1.5rem;
+      font-size: 0.78rem; border-radius: 2px;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s; pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.error { background: var(--red); }
+    #toast.success { background: var(--green); }
+
+    /* ── STEP PROGRESS ── */
+    .checkout-header {
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: 1.5rem 3rem;
+    }
+    .steps { display: flex; align-items: center; gap: 0; max-width: 560px; margin: 0 auto; }
+    .step { display: flex; align-items: center; gap: 0.6rem; flex: 1; }
+    .step:last-child { flex: 0; }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 500; flex-shrink: 0;
+      border: 1.5px solid var(--border); color: var(--gray);
+      transition: all 0.3s;
+    }
+    .step.active .step-num { background: var(--black); border-color: var(--black); color: #fff; }
+    .step.done .step-num { background: var(--green); border-color: var(--green); color: #fff; }
+    .step-label { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray); transition: color 0.3s; white-space: nowrap; }
+    .step.active .step-label { color: var(--black); font-weight: 500; }
+    .step.done .step-label { color: var(--green); }
+    .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 0.8rem; }
+    .step-line.done { background: var(--green); }
+
+    /* ── LAYOUT ── */
+    .checkout-body { display: grid; grid-template-columns: 1fr 380px; gap: 2rem; max-width: 1100px; margin: 2.5rem auto; padding: 0 2rem 4rem; align-items: start; }
+    @media (max-width: 900px) { .checkout-body { grid-template-columns: 1fr; } .checkout-header, nav { padding-left: 1.5rem; padding-right: 1.5rem; } }
+
+    /* ── PANELS ── */
+    .panel { background: #fff; border: 1px solid var(--border); padding: 2rem; }
+    .panel + .panel { margin-top: 1.2rem; }
+    .panel-title { font-family: var(--serif); font-size: 1.4rem; font-weight: 300; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem; }
+    .panel-title span { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray); padding: 0.2rem 0.6rem; border: 1px solid var(--border); border-radius: 20px; }
+
+    /* ── FORM ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .form-field label { font-size: 0.67rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray); }
+    .form-field input, .form-field select, .form-field textarea {
+      padding: 0.75rem 0.9rem; border: 1px solid var(--border);
+      font-family: var(--sans); font-size: 0.9rem; background: #fff;
+      transition: border-color 0.2s; color: var(--black);
+    }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus { outline: none; border-color: var(--black); }
+    .form-field textarea { resize: vertical; min-height: 70px; }
+    .form-field.required label::after { content: ' *'; color: var(--red); }
+
+    /* ── PAYMENT OPTIONS ── */
+    .payment-options { display: flex; flex-direction: column; gap: 0.8rem; }
+    .pay-option {
+      display: flex; align-items: flex-start; gap: 1rem;
+      padding: 1rem 1.2rem; border: 1.5px solid var(--border);
+      cursor: pointer; transition: all 0.2s; user-select: none;
+      border-radius: 2px;
+    }
+    .pay-option:hover { border-color: #aaa; }
+    .pay-option.selected { border-color: var(--black); background: var(--cream); }
+    .pay-option input[type="radio"] { margin-top: 2px; accent-color: var(--black); flex-shrink: 0; }
+    .pay-option-body { flex: 1; }
+    .pay-option-title { font-size: 0.88rem; font-weight: 500; margin-bottom: 0.15rem; }
+    .pay-option-desc { font-size: 0.75rem; color: var(--gray); line-height: 1.5; }
+    .pay-icon { font-size: 1.4rem; margin-top: 1px; }
+    /* Expanded detail panels per payment */
+    .pay-detail { display: none; margin-top: 1rem; padding: 1rem; background: var(--cream); border-top: 1px solid var(--border); }
+    .pay-option.selected .pay-detail { display: block; }
+    .pay-detail-label { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.6rem; }
+    /* Mock card fields */
+    .card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .card-fields .full { grid-column: 1/-1; }
+    .mock-input {
+      padding: 0.65rem 0.8rem; border: 1px solid var(--border);
+      font-family: var(--sans); font-size: 0.85rem; background: #fff;
+      transition: border-color 0.2s;
+    }
+    .mock-input:focus { outline: none; border-color: var(--black); }
+    /* QR code mock */
+    .qr-box { text-align: center; }
+    .qr-placeholder {
+      width: 150px; height: 150px; margin: 0 auto 0.8rem;
+      background: linear-gradient(135deg, #f0f0f0 25%, transparent 25%) -10px 0,
+                  linear-gradient(225deg, #f0f0f0 25%, transparent 25%) -10px 0,
+                  linear-gradient(315deg, #f0f0f0 25%, transparent 25%),
+                  linear-gradient(45deg,  #f0f0f0 25%, transparent 25%);
+      background-size: 20px 20px; background-color: #fff;
+      border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+    }
+    .qr-note { font-size: 0.75rem; color: var(--gray); }
+    /* Bank transfer */
+    .bank-info { display: flex; flex-direction: column; gap: 0.4rem; }
+    .bank-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+    .bank-row:last-child { border: none; }
+    .bank-key { color: var(--gray); }
+    .bank-val { font-weight: 500; }
+    /* COD */
+    .cod-note { font-size: 0.82rem; color: var(--gray); line-height: 1.8; }
+    .cod-note strong { color: var(--black); }
+
+    /* ── ORDER SUMMARY (right column) ── */
+    .summary-panel { background: #fff; border: 1px solid var(--border); padding: 1.8rem; position: sticky; top: 80px; }
+    .summary-title { font-family: var(--serif); font-size: 1.3rem; font-weight: 300; margin-bottom: 1.2rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border); }
+    .summary-items { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.2rem; max-height: 280px; overflow-y: auto; }
+    .summary-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+    .summary-item:last-child { border: none; }
+    .item-emoji { font-size: 1.6rem; width: 40px; height: 40px; background: var(--cream); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .item-info { flex: 1; }
+    .item-name { font-size: 0.82rem; font-weight: 500; line-height: 1.3; }
+    .item-meta { font-size: 0.72rem; color: var(--gray); }
+    .item-price { font-size: 0.85rem; text-align: right; white-space: nowrap; }
+    .summary-divider { height: 1px; background: var(--border); margin: 0.8rem 0; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.5rem; color: var(--gray); }
+    .summary-row.total { font-size: 1rem; font-weight: 500; color: var(--black); margin-top: 0.5rem; padding-top: 0.8rem; border-top: 1px solid var(--border); }
+    .summary-row.total .amt { font-family: var(--serif); font-size: 1.4rem; }
+    .summary-empty { text-align: center; color: var(--gray); padding: 2rem 0; font-size: 0.85rem; }
+    .summary-loading { color: var(--gray); font-size: 0.82rem; padding: 1rem 0; }
+
+    /* ── SUBMIT ── */
+    .checkout-submit {
+      width: 100%; padding: 1rem; margin-top: 1.2rem;
+      background: var(--black); color: #fff; border: none;
+      font-family: var(--sans); font-size: 0.78rem; letter-spacing: 0.15em;
+      text-transform: uppercase; cursor: pointer; transition: opacity 0.2s;
+    }
+    .checkout-submit:hover { opacity: 0.82; }
+    .checkout-submit:disabled { opacity: 0.45; cursor: default; }
+    .secure-note { display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.72rem; color: var(--gray); margin-top: 0.8rem; }
+
+    /* ── SUCCESS PAGE ── */
+    #successPage { display: none; }
+    .success-wrap { max-width: 560px; margin: 4rem auto; padding: 0 2rem; text-align: center; }
+    .success-icon { font-size: 4rem; margin-bottom: 1.2rem; }
+    .success-title { font-family: var(--serif); font-size: 2.5rem; font-weight: 300; margin-bottom: 0.6rem; }
+    .success-sub { color: var(--gray); font-size: 0.9rem; margin-bottom: 2rem; line-height: 1.8; }
+    .order-receipt { background: #fff; border: 1px solid var(--border); padding: 1.8rem; text-align: left; margin-bottom: 1.8rem; }
+    .receipt-title { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray); margin-bottom: 1rem; }
+    .receipt-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+    .receipt-row:last-child { border: none; font-weight: 500; }
+    .receipt-key { color: var(--gray); }
+    .receipt-back {
+      display: inline-block; padding: 0.85rem 2.5rem; background: var(--black); color: #fff;
+      text-decoration: none; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+      transition: opacity 0.2s;
+    }
+    .receipt-back:hover { opacity: 0.8; }
+
+    /* ── SPINNER ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 0.5rem; }
+
+    /* auth guard */
+    #authGuard { display: none; text-align: center; padding: 5rem 2rem; }
+    .guard-title { font-family: var(--serif); font-size: 2rem; font-weight: 300; margin-bottom: 0.8rem; }
+    .guard-sub { color: var(--gray); margin-bottom: 2rem; }
+    .guard-btn { padding: 0.85rem 2rem; background: var(--black); color: #fff; border: none; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; text-decoration: none; display: inline-block; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">GLOWTIME</a>
+  <a href="index.html#shop" class="nav-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    กลับไปช้อปปิ้ง
+  </a>
+</nav>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- AUTH GUARD (shown when not logged in) -->
+<div id="authGuard">
+  <p class="guard-title">กรุณาเข้าสู่ระบบ</p>
+  <p class="guard-sub">คุณต้องเข้าสู่ระบบก่อนดำเนินการชำระเงิน</p>
+  <a href="index.html" class="guard-btn">กลับหน้าหลัก &amp; Login</a>
+</div>
+
+<!-- STEP PROGRESS -->
+<div class="checkout-header" id="checkoutHeader">
+  <div class="steps">
+    <div class="step done" id="step1">
+      <div class="step-num">✓</div>
+      <div class="step-label">ตะกร้าสินค้า</div>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step active" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-label">ที่อยู่จัดส่ง</div>
+    </div>
+    <div class="step-line" id="stepLine2"></div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-label">ชำระเงิน</div>
+    </div>
+    <div class="step-line" id="stepLine3"></div>
+    <div class="step" id="step4">
+      <div class="step-num">4</div>
+      <div class="step-label">ยืนยัน</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MAIN CHECKOUT BODY
+════════════════════════════════════════ -->
+<div class="checkout-body" id="checkoutBody">
+
+  <!-- LEFT: Forms -->
+  <div id="formCol">
+
+    <!-- ── SECTION 1: SHIPPING ADDRESS ── -->
+    <div class="panel" id="shippingPanel">
+      <h2 class="panel-title">ที่อยู่จัดส่ง <span>Step 1</span></h2>
+      <form id="shippingForm" autocomplete="on">
+        <div class="form-grid">
+          <div class="form-field required full">
+            <label for="recipient">ชื่อ-นามสกุลผู้รับ</label>
+            <input type="text" id="recipient" placeholder="วิชญาดา กิตตินัฏพงศ์" required/>
+          </div>
+          <div class="form-field required full">
+            <label for="address">ที่อยู่ (บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ)</label>
+            <textarea id="address" placeholder="123/45 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย" required></textarea>
+          </div>
+          <div class="form-field required">
+            <label for="province">จังหวัด</label>
+            <select id="province" required>
+              <option value="">— เลือกจังหวัด —</option>
+              <option value="กรุงเทพมหานคร" selected>กรุงเทพมหานคร</option>
+              <option value="เชียงใหม่">เชียงใหม่</option>
+              <option value="ชลบุรี">ชลบุรี</option>
+              <option value="ภูเก็ต">ภูเก็ต</option>
+              <option value="นนทบุรี">นนทบุรี</option>
+              <option value="ปทุมธานี">ปทุมธานี</option>
+              <option value="สมุทรปราการ">สมุทรปราการ</option>
+              <option value="ขอนแก่น">ขอนแก่น</option>
+              <option value="นครราชสีมา">นครราชสีมา</option>
+              <option value="อุดรธานี">อุดรธานี</option>
+              <option value="สงขลา">สงขลา</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+          <div class="form-field required">
+            <label for="postalCode">รหัสไปรษณีย์</label>
+            <input type="text" id="postalCode" placeholder="10110" maxlength="5" pattern="[0-9]{5}" required/>
+          </div>
+          <div class="form-field full">
+            <label for="phone">เบอร์โทรศัพท์ (สำหรับติดต่อ)</label>
+            <input type="tel" id="phone" placeholder="08x-xxx-xxxx"/>
+          </div>
+          <div class="form-field full">
+            <label for="deliveryNote">หมายเหตุการจัดส่ง (ไม่บังคับ)</label>
+            <input type="text" id="deliveryNote" placeholder="เช่น กรุณาวางไว้หน้าประตู, โทรก่อนส่ง"/>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- ── SECTION 2: PAYMENT METHOD ── -->
+    <div class="panel" id="paymentPanel">
+      <h2 class="panel-title">วิธีชำระเงิน <span>Step 2</span></h2>
+      <div class="payment-options" id="paymentOptions">
+
+        <!-- Credit/Debit Card -->
+        <label class="pay-option selected" onclick="selectPayment('credit_card', this)">
+          <input type="radio" name="payment" value="credit_card" checked/>
+          <div class="pay-icon">💳</div>
+          <div class="pay-option-body">
+            <div class="pay-option-title">บัตรเครดิต / บัตรเดบิต</div>
+            <div class="pay-option-desc">Visa, Mastercard, JCB — ชำระทันที (จำลอง)</div>
+            <div class="pay-detail">
+              <div class="pay-detail-label">ข้อมูลบัตร (ทดสอบ — ไม่บันทึกจริง)</div>
+              <div class="card-fields">
+                <div class="full">
+                  <input class="mock-input" type="text" placeholder="1234 5678 9012 3456" maxlength="19" id="cardNumber" oninput="formatCard(this)"/>
+                </div>
+                <input class="mock-input" type="text" placeholder="MM/YY" maxlength="5" id="cardExpiry" oninput="formatExpiry(this)"/>
+                <input class="mock-input" type="text" placeholder="CVV" maxlength="4" id="cardCvv"/>
+                <div class="full">
+                  <input class="mock-input" type="text" placeholder="ชื่อบนบัตร" id="cardName" style="width:100%;"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </label>
+
+        <!-- QR Code / PromptPay -->
+        <label class="pay-option" onclick="selectPayment('qr_code', this)">
+          <input type="radio" name="payment" value="qr_code"/>
+          <div class="pay-icon">📱</div>
+          <div class="pay-option-body">
+            <div class="pay-option-title">QR Code / PromptPay</div>
+            <div class="pay-option-desc">สแกน QR ผ่านแอปธนาคาร — ยืนยันอัตโนมัติ (จำลอง)</div>
+            <div class="pay-detail">
+              <div class="pay-detail-label">สแกน QR Code ด้านล่าง</div>
+              <div class="qr-box">
+                <div class="qr-placeholder">▦</div>
+                <p class="qr-note">PromptPay: 066-xxx-xxxx<br/>GLOWTIME Co., Ltd. · ยอดชำระจะอัปเดตอัตโนมัติ</p>
+              </div>
+            </div>
+          </div>
+        </label>
+
+        <!-- Bank Transfer -->
+        <label class="pay-option" onclick="selectPayment('bank_transfer', this)">
+          <input type="radio" name="payment" value="bank_transfer"/>
+          <div class="pay-icon">🏦</div>
+          <div class="pay-option-body">
+            <div class="pay-option-title">โอนเงินผ่านธนาคาร</div>
+            <div class="pay-option-desc">โอนเงินและแนบหลักฐาน — ยืนยันภายใน 24 ชั่วโมง</div>
+            <div class="pay-detail">
+              <div class="pay-detail-label">บัญชีธนาคาร (จำลอง)</div>
+              <div class="bank-info">
+                <div class="bank-row"><span class="bank-key">ธนาคาร</span><span class="bank-val">กสิกรไทย (KBANK)</span></div>
+                <div class="bank-row"><span class="bank-key">เลขบัญชี</span><span class="bank-val">123-4-56789-0</span></div>
+                <div class="bank-row"><span class="bank-key">ชื่อบัญชี</span><span class="bank-val">GLOWTIME CO., LTD.</span></div>
+                <div class="bank-row"><span class="bank-key">ยอดโอน</span><span class="bank-val" id="bankTransferAmt" style="color: var(--black); font-size:1rem; font-family: var(--serif);">—</span></div>
+              </div>
+            </div>
+          </div>
+        </label>
+
+        <!-- Cash on Delivery -->
+        <label class="pay-option" onclick="selectPayment('cash_on_delivery', this)">
+          <input type="radio" name="payment" value="cash_on_delivery"/>
+          <div class="pay-icon">💵</div>
+          <div class="pay-option-body">
+            <div class="pay-option-title">เก็บเงินปลายทาง (COD)</div>
+            <div class="pay-option-desc">ชำระเงินเมื่อได้รับสินค้า — มีค่าธรรมเนียม ฿30</div>
+            <div class="pay-detail">
+              <div class="pay-detail-label">รายละเอียด COD</div>
+              <p class="cod-note">
+                <strong>ชำระเงินสดเมื่อรับสินค้า</strong><br/>
+                • มีค่าธรรมเนียม COD <strong>฿30</strong> ต่อออเดอร์<br/>
+                • กรุณาเตรียมเงินสดให้พอดียอด<br/>
+                • เจ้าหน้าที่จะโทรยืนยันก่อนจัดส่ง<br/>
+                • ระยะเวลาจัดส่ง 2-5 วันทำการ
+              </p>
+            </div>
+          </div>
+        </label>
+
+      </div>
+    </div>
+
+  </div><!-- end formCol -->
+
+  <!-- RIGHT: Order Summary -->
+  <div>
+    <div class="summary-panel" id="summaryPanel">
+      <div class="summary-title">สรุปคำสั่งซื้อ</div>
+
+      <!-- Items list -->
+      <div class="summary-items" id="summaryItems">
+        <p class="summary-loading">กำลังโหลด…</p>
+      </div>
+
+      <!-- Pricing breakdown -->
+      <div class="summary-row">
+        <span>ราคาสินค้า</span>
+        <span id="subtotalAmt">—</span>
+      </div>
+      <div class="summary-row">
+        <span>ค่าจัดส่ง</span>
+        <span id="shippingAmt">ฟรี</span>
+      </div>
+      <div class="summary-row" id="codRow" style="display:none; color: var(--brown);">
+        <span>ค่าธรรมเนียม COD</span>
+        <span>฿30</span>
+      </div>
+      <div class="summary-row total">
+        <span>ยอดรวมทั้งสิ้น</span>
+        <span class="amt" id="totalAmt">—</span>
+      </div>
+
+      <!-- Submit CTA -->
+      <button class="checkout-submit" id="submitBtn" onclick="handleCheckout()" disabled>
+        ยืนยันคำสั่งซื้อ
+      </button>
+      <p class="secure-note">🔒 ข้อมูลของคุณถูกเข้ารหัสอย่างปลอดภัย</p>
+    </div>
+  </div>
+
+</div><!-- end checkoutBody -->
+
+<!-- ═══════════════════════════════════════
+     SUCCESS PAGE
+════════════════════════════════════════ -->
+<div id="successPage">
+  <div class="success-wrap">
+    <div class="success-icon">🎉</div>
+    <h1 class="success-title">ขอบคุณ!</h1>
+    <p class="success-sub" id="successSub">คำสั่งซื้อของคุณได้รับการยืนยันแล้ว<br/>เราจะดำเนินการจัดส่งให้โดยเร็วที่สุด</p>
+
+    <div class="order-receipt" id="orderReceipt">
+      <div class="receipt-title">รายละเอียดคำสั่งซื้อ</div>
+      <div class="receipt-row">
+        <span class="receipt-key">หมายเลขออเดอร์</span>
+        <span id="rcOrderId"></span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-key">วิธีชำระเงิน</span>
+        <span id="rcMethod"></span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-key">จัดส่งไปที่</span>
+        <span id="rcAddress"></span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-key">ยอดรวม</span>
+        <span id="rcTotal"></span>
+      </div>
+    </div>
+
+    <a href="index.html" class="receipt-back">กลับหน้าหลัก</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+<script src="api.js"></script>
+<script>
+const _api = window.GlowtimeAPI;
+let _cart = null;
+let _selectedPayment = 'credit_card';
+let _isCOD = false;
+
+// ── Toast ──────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = ['show', type].filter(Boolean).join(' ');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+}
+
+// ── Auth guard ─────────────────────────────────────────
+function checkAuth() {
+  if (!_api.Auth.isLoggedIn()) {
+    document.getElementById('checkoutHeader').style.display = 'none';
+    document.getElementById('checkoutBody').style.display   = 'none';
+    document.getElementById('authGuard').style.display      = 'block';
+    return false;
+  }
+  return true;
+}
+
+// ── Load cart ──────────────────────────────────────────
+const EMOJI_MAP = { Serum:'🧴', Toner:'💧', Moisturizer:'🫧', Cream:'✨', Sunscreen:'☀️' };
+
+async function loadCart() {
+  const itemsEl  = document.getElementById('summaryItems');
+  const submitBtn = document.getElementById('submitBtn');
+  try {
+    _cart = await _api.Cart.get();
+    if (!_cart.items || _cart.items.length === 0) {
+      itemsEl.innerHTML = '<p class="summary-empty">ตะกร้าว่างเปล่า — <a href="index.html#shop" style="color:var(--black);">เลือกสินค้า</a></p>';
+      return;
+    }
+    // Render items
+    itemsEl.innerHTML = _cart.items.map(item => {
+      const emoji = EMOJI_MAP[item.category] || '🧴';
+      return `<div class="summary-item">
+        <div class="item-emoji">${emoji}</div>
+        <div class="item-info">
+          <div class="item-name">${item.productName}</div>
+          <div class="item-meta">฿${item.unitPrice.toLocaleString()} × ${item.qty}</div>
+        </div>
+        <div class="item-price">฿${item.subtotal.toLocaleString()}</div>
+      </div>`;
+    }).join('');
+
+    // Pricing
+    const subtotal = _cart.totalAmount;
+    document.getElementById('subtotalAmt').textContent = `฿${subtotal.toLocaleString()}`;
+    updateTotal();
+
+    // Enable submit
+    submitBtn.disabled = false;
+
+    // Pre-fill recipient from user profile
+    const user = _api.getUser();
+    if (user && !document.getElementById('recipient').value) {
+      document.getElementById('recipient').value = user.username || '';
+    }
+  } catch (err) {
+    itemsEl.innerHTML = `<p class="summary-empty" style="color:var(--red);">โหลดตะกร้าไม่ได้: ${err.message}</p>`;
+  }
+}
+
+// ── Payment selection ──────────────────────────────────
+function selectPayment(method, el) {
+  _selectedPayment = method;
+  _isCOD = (method === 'cash_on_delivery');
+  // Update styles
+  document.querySelectorAll('.pay-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  // Set radio
+  el.querySelector('input[type="radio"]').checked = true;
+  // Update COD fee
+  updateTotal();
+  // Update bank transfer amount
+  if (method === 'bank_transfer' && _cart) {
+    document.getElementById('bankTransferAmt').textContent = `฿${_cart.totalAmount.toLocaleString()}`;
+  }
+  // Update step indicator
+  document.getElementById('step3').classList.add('active');
+  document.getElementById('stepLine2').classList.add('done');
+}
+
+function updateTotal() {
+  if (!_cart) return;
+  const cod   = _isCOD ? 30 : 0;
+  const total = _cart.totalAmount + cod;
+  document.getElementById('totalAmt').textContent = `฿${total.toLocaleString()}`;
+  document.getElementById('codRow').style.display = _isCOD ? 'flex' : 'none';
+}
+
+// ── Input formatters ───────────────────────────────────
+function formatCard(el) {
+  let v = el.value.replace(/\D/g, '').substring(0, 16);
+  el.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+}
+function formatExpiry(el) {
+  let v = el.value.replace(/\D/g, '').substring(0, 4);
+  if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+  el.value = v;
+}
+
+// ── Validate shipping form ─────────────────────────────
+function validateShipping() {
+  const recipient  = document.getElementById('recipient').value.trim();
+  const address    = document.getElementById('address').value.trim();
+  const province   = document.getElementById('province').value;
+  const postalCode = document.getElementById('postalCode').value.trim();
+
+  if (!recipient)            { toast('กรุณาระบุชื่อผู้รับ', 'error'); return null; }
+  if (!address)              { toast('กรุณาระบุที่อยู่จัดส่ง', 'error'); return null; }
+  if (!province)             { toast('กรุณาเลือกจังหวัด', 'error'); return null; }
+  if (!/^\d{5}$/.test(postalCode)) { toast('รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก', 'error'); return null; }
+
+  return { recipient, address, province, postalCode };
+}
+
+// ── Checkout handler ───────────────────────────────────
+async function handleCheckout() {
+  const shippingAddress = validateShipping();
+  if (!shippingAddress) return;
+
+  if (!_cart || !_cart.items?.length) {
+    toast('ตะกร้าสินค้าว่างเปล่า', 'error'); return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>กำลังดำเนินการ…';
+
+  // Update steps UI
+  document.getElementById('step3').classList.add('active');
+  document.getElementById('step4').classList.add('active');
+  document.getElementById('stepLine2').classList.add('done');
+  document.getElementById('stepLine3').classList.add('done');
+
+  try {
+    // 1. Create order
+    const order = await _api.Orders.create(shippingAddress, _selectedPayment);
+    const orderId = order.orderId;
+
+    // 2. Process payment (mock)
+    let paymentResult;
+    if (_selectedPayment === 'bank_transfer') {
+      // Bank transfer: just confirm, payment is manual
+      paymentResult = { method: 'bank_transfer', status: 'pending_transfer', note: 'กรุณาโอนเงินภายใน 24 ชั่วโมง' };
+      // Still call API to update order status
+      try { await _api.Payments.checkout(orderId, _selectedPayment); } catch {}
+    } else {
+      paymentResult = await _api.Payments.checkout(orderId, _selectedPayment);
+    }
+
+    // 3. Show success
+    showSuccess(order, paymentResult, shippingAddress);
+
+  } catch (err) {
+    toast(err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+    btn.disabled = false;
+    btn.textContent = 'ยืนยันคำสั่งซื้อ';
+  }
+}
+
+// ── Show success screen ────────────────────────────────
+const METHOD_LABEL = {
+  credit_card:      '💳 บัตรเครดิต / เดบิต',
+  qr_code:          '📱 QR Code / PromptPay',
+  bank_transfer:    '🏦 โอนเงินผ่านธนาคาร',
+  cash_on_delivery: '💵 เก็บเงินปลายทาง (COD)',
+};
+
+function showSuccess(order, payment, addr) {
+  // Hide checkout, show success
+  document.getElementById('checkoutHeader').style.display = 'none';
+  document.getElementById('checkoutBody').style.display   = 'none';
+  document.getElementById('successPage').style.display    = 'block';
+
+  const isCOD = _selectedPayment === 'cash_on_delivery';
+  const isTransfer = _selectedPayment === 'bank_transfer';
+  const cod = isCOD ? 30 : 0;
+  const total = (order.totalAmount || _cart.totalAmount) + cod;
+
+  // Sub message
+  let subMsg = 'คำสั่งซื้อของคุณได้รับการยืนยันแล้ว<br/>เราจะดำเนินการจัดส่งให้โดยเร็วที่สุด';
+  if (isCOD) subMsg = 'คำสั่งซื้อได้รับการยืนยัน<br/>กรุณาเตรียมเงินสด <strong>฿' + total.toLocaleString() + '</strong> เมื่อรับสินค้า';
+  if (isTransfer) subMsg = 'กรุณาโอนเงิน <strong>฿' + total.toLocaleString() + '</strong> ภายใน 24 ชั่วโมง<br/>มายังบัญชี กสิกรไทย 123-4-56789-0';
+  document.getElementById('successSub').innerHTML = subMsg;
+
+  // Receipt
+  document.getElementById('rcOrderId').textContent = order.orderId || '—';
+  document.getElementById('rcMethod').textContent  = METHOD_LABEL[_selectedPayment] || _selectedPayment;
+  document.getElementById('rcAddress').textContent = `${addr.recipient}, ${addr.address}, ${addr.province} ${addr.postalCode}`;
+  document.getElementById('rcTotal').textContent   = `฿${total.toLocaleString()}`;
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Init ──────────────────────────────────────────────
+(async function init() {
+  if (!checkAuth()) return;
+  await loadCart();
+  // Activate step 2
+  document.getElementById('step2').classList.add('active');
+  // Mark step 1 done
+  document.getElementById('step1').classList.add('done');
+})();
+</script>
+</body>
+</html>

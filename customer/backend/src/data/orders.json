@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "orderId": "ORD-20260701-0001",
+    "customerId": 1,
+    "status": "delivered",
+    "items": [
+      {
+        "orderItemId": 1,
+        "productId": 1001,
+        "productName": "Hydrating Serum",
+        "qty": 1,
+        "unitPrice": 590.0,
+        "subtotal": 590.0
+      }
+    ],
+    "totalAmount": 590.0,
+    "shippingAddress": {
+      "recipient": "นภัสสร ใส่ใจผิว",
+      "address": "123/45 ถ.สุขุมวิท",
+      "province": "กรุงเทพมหานคร",
+      "postalCode": "10110"
+    },
+    "createdAt": "2026-07-01T10:15:00+07:00"
+  }
+]

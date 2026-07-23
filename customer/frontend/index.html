@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GLOWTIME — Premium Skincare</title>
+  <meta name="description" content="GLOWTIME ร้านสกินแคร์ออนไลน์คุณภาพสูง ผลิตภัณฑ์ดูแลผิวจากส่วนผสมธรรมชาติ"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/home.css"/>
+</head>
+
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#top" class="nav-logo">GLOWTIME</a>
+  <ul class="nav-links">
+    <li><a href="#top">Home</a></li>
+    <li><a href="#shop">Shop</a></li>
+    <li><a href="#about">Our Story</a></li>
+    <li><a href="#promise">Promise</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-actions">
+    <!-- Guest Cart (ก่อน login) -->
+    <span class="guest-cart-wrap" id="navGuestCartWrap" style="display:none;">
+      <button class="nav-cart-btn" onclick="openGuestCartPrompt()" title="ตะกร้าสินค้า (กรุณา Login)">
+        🛒 <span class="guest-cart-badge" id="guestCartBadge"></span>
+      </button>
+    </span>
+    <!-- Logged-in Cart -->
+    <button class="nav-cart-btn" id="navCartBtn" onclick="openCart()" title="ตะกร้าสินค้า" style="display:none;">
+      🛒 <span class="cart-count" id="cartCount"></span>
+    </button>
+    <!-- Guest state -->
+    <span id="navGuest">
+      <button class="nav-btn" onclick="openModal('loginModal')">Log In</button>
+      <a href="#shop" class="nav-cta">Shop Now</a>
+    </span>
+    <!-- Logged-in state -->
+    <span id="navUser" style="display:none;">
+      <span id="navUsername"></span>
+      <a href="orders.html" class="nav-btn">My Orders</a>
+      <button class="nav-btn" onclick="doLogout()">Logout</button>
+    </span>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="hero-left">
+    <p class="hero-tag">Premium Skincare Collection · GLOWTIME</p>
+    <h1 class="hero-title">Reveal Your<br/><em>Natural</em><br/>Radiance</h1>
+    <p class="hero-desc">ผลิตภัณฑ์ดูแลผิวคุณภาพสูง ผสานส่วนผสมจากธรรมชาติและงานวิจัยทางวิทยาศาสตร์ เพื่อผิวที่ดีที่สุดของคุณ</p>
+    <div class="hero-btns">
+      <a href="#shop" class="btn-dark">Shop Now</a>
+      <a href="#about" class="btn-ghost">Our Story</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-img-placeholder">
+      <div class="hero-bottle">🧴</div>
+      <p class="hero-img-label">GLOWTIME · Signature Serum</p>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip">
+  <div class="marquee-inner">
+    <span class="marquee-item">Natural Ingredients</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Dermatologist Tested</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Cruelty Free</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Visible Results</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Science-Backed</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Natural Ingredients</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Dermatologist Tested</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Cruelty Free</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Visible Results</span><span class="marquee-dot">·</span>
+    <span class="marquee-item">Science-Backed</span><span class="marquee-dot">·</span>
+  </div>
+</div>
+
+<!-- BRAND STORY -->
+<section class="brand-band" id="about">
+  <div class="brand-inner">
+    <p class="brand-eyebrow">The House of</p>
+    <h2 class="brand-wordmark"><em>GLOWTIME</em></h2>
+    <p class="brand-copy">เราเชื่อว่าผิวที่ดีเริ่มจากความเรียบง่าย — ส่วนผสมจากธรรมชาติที่พิสูจน์ได้ทางวิทยาศาสตร์ ผลิตทีละน้อยเพื่อความสดใหม่ และโปร่งใสในทุกขั้นตอน นี่คือสกินแคร์ที่ตั้งใจทำมาเพื่อผิวของคุณจริงๆ</p>
+    <div class="brand-rule"></div>
+    <p class="brand-sign">Clean beauty, backed by science · Est. 2026 — Bangkok</p>
+  </div>
+</section>
+
+<!-- SHOP -->
+<section class="section" id="shop">
+  <div class="section-header">
+    <h2 class="section-title">Shop All Products</h2>
+    <span class="section-link" id="productCount">Loading…</span>
+  </div>
+
+  <!-- Search box -->
+  <div class="search-wrap">
+    <input type="search" id="searchInput" class="search-input"
+           placeholder="🔍 ค้นหาสินค้า เช่น serum, toner, ชื่อแบรนด์…" autocomplete="off"/>
+    <button class="search-clear" id="searchClearBtn" onclick="clearSearch()">Clear</button>
+  </div>
+
+  <!-- Skin type filter -->
+  <div class="filter-bar" id="filterBar">
+    <button class="chip active" data-filter="">All</button>
+    <button class="chip" data-filter="sensitive">Sensitive</button>
+    <button class="chip" data-filter="dry">Dry</button>
+    <button class="chip" data-filter="oily">Oily</button>
+    <button class="chip" data-filter="combination">Combination</button>
+    <button class="chip" data-filter="normal">Normal</button>
+  </div>
+
+  <!-- Product grid (populated by JS) -->
+  <div class="products-grid" id="productsGrid">
+    <!-- skeleton placeholders -->
+    <div class="product-skeleton">
+      <div class="skel-img skeleton"></div>
+      <div class="skel-line skeleton" style="width:60%"></div>
+      <div class="skel-line skeleton" style="width:80%"></div>
+      <div class="skel-line skeleton" style="width:40%"></div>
+    </div>
+    <div class="product-skeleton">
+      <div class="skel-img skeleton"></div>
+      <div class="skel-line skeleton" style="width:55%"></div>
+      <div class="skel-line skeleton" style="width:75%"></div>
+      <div class="skel-line skeleton" style="width:35%"></div>
+    </div>
+    <div class="product-skeleton">
+      <div class="skel-img skeleton"></div>
+      <div class="skel-line skeleton" style="width:65%"></div>
+      <div class="skel-line skeleton" style="width:70%"></div>
+      <div class="skel-line skeleton" style="width:45%"></div>
+    </div>
+    <div class="product-skeleton">
+      <div class="skel-img skeleton"></div>
+      <div class="skel-line skeleton" style="width:50%"></div>
+      <div class="skel-line skeleton" style="width:85%"></div>
+      <div class="skel-line skeleton" style="width:40%"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROMISE -->
+<div class="promise-section" id="promise">
+  <h2 class="promise-title">The GLOWTIME Promise</h2>
+  <p class="promise-sub">เราเชื่อในความโปร่งใส คุณภาพ และผลลัพธ์ที่มองเห็นได้จริง ทุกผลิตภัณฑ์ถูกคัดสรรและทดสอบอย่างพิถีพิถัน</p>
+  <div class="promise-grid">
+    <div class="promise-item">
+      <div class="promise-icon">🌱</div>
+      <p class="promise-label">Natural Ingredients</p>
+      <p class="promise-desc">ส่วนผสมจากธรรมชาติ จากพืชและแร่ธาตุที่ผ่านการคัดสรร</p>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">🔬</div>
+      <p class="promise-label">Dermatologist Tested</p>
+      <p class="promise-desc">ผ่านการทดสอบทางคลินิก ปลอดภัยสำหรับทุกสภาพผิว</p>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">⭐</div>
+      <p class="promise-label">Visible Results</p>
+      <p class="promise-desc">เห็นผลภายใน 2–4 สัปดาห์ของการใช้อย่างสม่ำเสมอ</p>
+    </div>
+    <div class="promise-item">
+      <div class="promise-icon">🐰</div>
+      <p class="promise-label">Cruelty Free</p>
+      <p class="promise-desc">ไม่ทดลองกับสัตว์ สูตร Vegan-friendly ทุกผลิตภัณฑ์</p>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<section class="section contact-section" id="contact">
+  <div class="contact-inner">
+    <p class="contact-eyebrow">Stay in touch</p>
+    <h2 class="contact-title">Join the ritual</h2>
+    <p class="contact-copy">รับเคล็ดลับการดูแลผิวและสิทธิพิเศษเฉพาะสมาชิกก่อนใคร</p>
+    <form class="contact-form" onsubmit="return handleSubscribe(event)">
+      <input type="email" id="subscribeEmail" class="contact-input" placeholder="อีเมลของคุณ" required/>
+      <button type="submit" class="contact-btn" id="subscribeBtn">Subscribe</button>
+    </form>
+    <p class="contact-meta">hello@glowtime.co · Bangkok, Thailand</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <p class="footer-logo">GLOWTIME</p>
+    <p style="font-size:0.72rem; margin-top:0.5rem;">Premium Skincare Online Store</p>
+    <div style="display:flex; gap:1.8rem; margin-top:1.2rem; flex-wrap:wrap;">
+      <a href="#top" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Home</a>
+      <a href="#shop" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Shop</a>
+      <a href="#about" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Our Story</a>
+      <a href="#contact" style="color:rgba(255,255,255,0.55); text-decoration:none; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase;">Contact</a>
+    </div>
+  </div>
+  <div class="footer-info">
+    CSI204 Digital Platform for Software Development<br/>
+    GLOWTIME — Customer Frontend<br/>
+    <span style="font-size:0.65rem; opacity:0.5;">วิชญาดา กิตตินัฏพงศ์ 67154712</span>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     PRODUCT DETAIL MODAL
+════════════════════════════════════════════════════ -->
+<div class="overlay" id="pdpModal" onclick="if(event.target===this)closeModal('pdpModal')">
+  <div class="modal pdp-modal">
+    <!-- Left: Image panel -->
+    <div class="pdp-img-panel" id="pdpImgPanel">
+      <button class="pdp-close" onclick="closeModal('pdpModal')">&times;</button>
+      <div class="pdp-big-emoji" id="pdpEmoji">🧴</div>
+      <span class="pdp-brand-tag" id="pdpBrand"></span>
+    </div>
+    <!-- Right: Info panel -->
+    <div class="pdp-info-panel">
+      <div>
+        <p class="pdp-category" id="pdpCategory"></p>
+        <h2 class="pdp-name" id="pdpName"></h2>
+      </div>
+      <div class="pdp-rating-row">
+        <span class="pdp-stars" id="pdpStars"></span>
+        <span class="pdp-rating-num" id="pdpRatingNum"></span>
+        <span class="pdp-rating-count" id="pdpRatingCount"></span>
+      </div>
+      <div class="pdp-price-row">
+        <span class="pdp-price" id="pdpPrice"></span>
+        <span class="pdp-price-thb">บาท</span>
+      </div>
+      <div class="pdp-divider"></div>
+      <!-- Description -->
+      <div>
+        <p class="pdp-section-label">เกี่ยวกับผลิตภัณฑ์</p>
+        <p class="pdp-description" id="pdpDesc"></p>
+      </div>
+      <!-- Skin type -->
+      <div>
+        <p class="pdp-section-label">เหมาะกับผิวประเภท</p>
+        <div class="pdp-tags" id="pdpSkinTags"></div>
+      </div>
+      <!-- Ingredients -->
+      <div>
+        <p class="pdp-section-label">ส่วนผสมสำคัญ</p>
+        <div class="pdp-ingredients" id="pdpIngredients"></div>
+      </div>
+      <!-- Stock & expiry -->
+      <div class="pdp-meta-row" id="pdpMetaRow">
+        <div class="pdp-meta-item">
+          <span class="pdp-meta-label">สต็อกสินค้า</span>
+          <span class="pdp-meta-val" id="pdpStock"></span>
+        </div>
+        <div class="pdp-meta-item">
+          <span class="pdp-meta-label">วันหมดอายุ</span>
+          <span class="pdp-meta-val" id="pdpExpiry"></span>
+        </div>
+      </div>
+      <!-- Reviews preview -->
+      <div id="pdpReviewsWrap" style="display:none;">
+        <p class="pdp-section-label">รีวิวจากลูกค้า</p>
+        <div class="pdp-reviews" id="pdpReviews"></div>
+      </div>
+      <!-- Write review (เฉพาะลูกค้าที่ซื้อและได้รับสินค้าแล้ว) -->
+      <button class="pdp-btn-review" id="pdpReviewBtn" style="display:none;" onclick="pdpWriteReview()">
+        ✎ เขียนรีวิวสินค้านี้
+      </button>
+      <!-- CTA -->
+      <div class="pdp-cta">
+        <button class="pdp-btn-add" id="pdpAddBtn" onclick="pdpAddToCart()">Add to Cart</button>
+        <p class="pdp-guest-note" id="pdpGuestNote" style="display:none;">
+          สินค้าถูกบันทึกไว้ชั่วคราว —
+          <button onclick="closeModal('pdpModal'); openModal('loginModal')">Login เพื่อยืนยัน</button>
+          หรือ <button onclick="closeModal('pdpModal'); openModal('registerModal')">สมัครสมาชิก</button>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     LOGIN MODAL
+════════════════════════════════════════════════════ -->
+<div class="overlay" id="loginModal" onclick="if(event.target===this)closeModal('loginModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+    <p class="modal-eyebrow">Welcome back</p>
+    <h2 class="modal-title">Sign In</h2>
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="form-field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@email.com" required/>
+      </div>
+      <div class="form-field">
+        <label for="loginPass">Password</label>
+        <input type="password" id="loginPass" placeholder="••••••••" required/>
+      </div>
+      <div class="form-error" id="loginError"></div>
+      <button type="submit" class="form-submit" id="loginSubmit">Sign In</button>
+    </form>
+    <p class="modal-alt">ยังไม่มีบัญชี?
+      <button onclick="switchModal('loginModal','registerModal')">สมัครสมาชิก</button>
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     REGISTER MODAL
+════════════════════════════════════════════════════ -->
+<div class="overlay" id="registerModal" onclick="if(event.target===this)closeModal('registerModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+    <p class="modal-eyebrow">Create Account</p>
+    <h2 class="modal-title">Register</h2>
+    <form id="registerForm" onsubmit="return handleRegister(event)">
+      <div class="form-field">
+        <label for="regUsername">Username</label>
+        <input type="text" id="regUsername" placeholder="your_name" required/>
+      </div>
+      <div class="form-field">
+        <label for="regEmail">Email</label>
+        <input type="email" id="regEmail" placeholder="you@email.com" required/>
+      </div>
+      <div class="form-field">
+        <label for="regPass">Password</label>
+        <input type="password" id="regPass" placeholder="อย่างน้อย 6 ตัวอักษร" minlength="6" required/>
+      </div>
+      <div class="form-field">
+        <label for="regSkin">ประเภทผิว (ไม่บังคับ)</label>
+        <select id="regSkin">
+          <option value="">— เลือกประเภทผิว —</option>
+          <option value="sensitive">Sensitive (ผิวแพ้ง่าย)</option>
+          <option value="dry">Dry (ผิวแห้ง)</option>
+          <option value="oily">Oily (ผิวมัน)</option>
+          <option value="combination">Combination (ผิวผสม)</option>
+          <option value="normal">Normal (ผิวปกติ)</option>
+        </select>
+      </div>
+      <div class="form-error" id="registerError"></div>
+      <button type="submit" class="form-submit" id="registerSubmit">Create Account</button>
+    </form>
+    <p class="modal-alt">มีบัญชีแล้ว?
+      <button onclick="switchModal('registerModal','loginModal')">Sign In</button>
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     CART MODAL
+════════════════════════════════════════════════════ -->
+<div class="overlay" id="cartModal" onclick="if(event.target===this)closeModal('cartModal')">
+  <div class="modal cart-modal">
+    <button class="modal-close" onclick="closeModal('cartModal')">&times;</button>
+    <p class="modal-eyebrow">Your Bag</p>
+    <h2 class="modal-title">Shopping Cart</h2>
+    <div class="cart-items-list" id="cartItemsList">
+      <p class="cart-empty">กำลังโหลด…</p>
+    </div>
+    <div class="cart-total" id="cartTotal" style="display:none;">
+      <span>รวมทั้งสิ้น</span>
+      <strong id="cartTotalAmt"></strong>
+    </div>
+    <button class="form-submit" id="checkoutBtn" style="display:none;" onclick="handleCheckout()">
+      Proceed to Checkout (ชำระเงิน)
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     WRITE REVIEW MODAL
+════════════════════════════════════════════════════ -->
+<div class="overlay" id="reviewModal" onclick="if(event.target===this)closeModal('reviewModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('reviewModal')">&times;</button>
+    <p class="modal-eyebrow">Share your thoughts</p>
+    <h2 class="modal-title">เขียนรีวิว</h2>
+    <p style="font-size:0.85rem; color:var(--gray); margin-bottom:1rem;" id="reviewProductName"></p>
+    <form id="reviewForm" onsubmit="return handleSubmitReview(event)">
+      <div class="form-field">
+        <label>ให้คะแนน</label>
+        <div class="star-picker" id="starPicker">
+          <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="reviewComment">ความคิดเห็น</label>
+        <textarea id="reviewComment" class="review-textarea" placeholder="สินค้าเป็นอย่างไรบ้าง? ใช้แล้วผิวเป็นยังไง…" required></textarea>
+      </div>
+      <div class="form-error" id="reviewError"></div>
+      <button type="submit" class="form-submit" id="reviewSubmit">ส่งรีวิว</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════════════════ -->
+<script src="api.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/review.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>
