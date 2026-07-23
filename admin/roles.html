@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>8. สิทธิ์แอดมิน & Audit Log (Roles & Audit) — SkincareShop Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #0A0A0A; --white: #FFFFFF; --cream: #F7F5F2; --border: #E0DDD8;
+      --serif: 'Cormorant Garamond', Georgia, serif; --sans: 'Inter', sans-serif;
+      --status-success: #4A6741; --status-warning: #8B6F5E; --status-info: #2A4B7C; --status-danger: #C0392B;
+    }
+    html, body { height: 100%; font-family: var(--sans); background: var(--cream); color: var(--black); font-size: 13.5px; }
+
+    .auth-overlay { position: fixed; inset: 0; background: rgba(10,10,10,0.85); backdrop-filter: blur(10px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    .auth-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .auth-card { background: var(--white); width: 100%; max-width: 440px; padding: 3rem 2.5rem; }
+
+    .admin-container { display: flex; min-height: 100vh; }
+    aside.sidebar { width: 260px; background: var(--black); color: var(--white); position: fixed; top: 0; bottom: 0; left: 0; z-index: 90; }
+    .sidebar-header { padding: 2rem 1.8rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo { font-family: var(--serif); font-size: 1.5rem; color: var(--white); text-decoration: none; }
+    .sidebar-nav { list-style: none; padding: 1.5rem 0; }
+    .nav-section-title { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 0.8rem 1.8rem 0.4rem; }
+    .nav-item { display: flex; align-items: center; gap: 0.9rem; padding: 0.85rem 1.8rem; color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.82rem; border-left: 3px solid transparent; }
+    .nav-item:hover, .nav-item.active { color: var(--white); background: rgba(255,255,255,0.05); border-left-color: var(--white); }
+
+    main.main-content { margin-left: 260px; flex: 1; padding: 2rem 3rem 4rem; background: var(--cream); }
+    header.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; padding-bottom: 1.2rem; border-bottom: 1px solid var(--border); }
+    .page-title { font-family: var(--serif); font-size: 2.2rem; font-weight: 300; }
+    .topbar-actions { display: flex; align-items: center; gap: 1.2rem; }
+
+    .user-profile-btn { display: flex; align-items: center; gap: 0.7rem; background: var(--white); border: 1px solid var(--border); padding: 0.4rem 0.8rem; cursor: pointer; }
+    .user-avatar { width: 30px; height: 30px; background: var(--black); color: var(--white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem; }
+    .user-dropdown-menu { position: absolute; top: 48px; right: 0; width: 220px; background: var(--white); border: 1px solid var(--border); display: none; padding: 0.8rem; box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
+    .user-dropdown-menu.open { display: block; }
+
+    .content-card { background: var(--white); border: 1px solid var(--border); padding: 1.8rem; margin-bottom: 2.5rem; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border); }
+    .card-title { font-family: var(--serif); font-size: 1.5rem; }
+
+    .btn-dark-sm { background: var(--black); color: var(--white); padding: 0.55rem 1.2rem; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; border: none; cursor: pointer; }
+    .btn-ghost-sm { background: transparent; color: var(--black); padding: 0.55rem 1.2rem; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; border: 1px solid var(--border); cursor: pointer; }
+
+    .table-responsive { width: 100%; overflow-x: auto; }
+    table.data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem; }
+    table.data-table th { padding: 0.85rem 1rem; border-bottom: 2px solid var(--border); font-size: 0.68rem; text-transform: uppercase; color: #777; background: var(--cream); }
+    table.data-table td { padding: 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+    .status-badge { display: inline-block; padding: 0.25rem 0.6rem; font-size: 0.65rem; text-transform: uppercase; font-weight: 600; border-radius: 2px; }
+    .badge-success { background: rgba(74, 103, 65, 0.12); color: var(--status-success); }
+    .badge-warning { background: rgba(139, 111, 94, 0.12); color: var(--status-warning); }
+    .badge-info    { background: rgba(42, 75, 124, 0.12); color: var(--status-info); }
+    .badge-danger  { background: rgba(192, 57, 43, 0.12); color: var(--status-danger); }
+
+    .toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 10000; display: flex; flex-direction: column; gap: 0.8rem; }
+    .toast { background: var(--black); color: var(--white); padding: 0.9rem 1.4rem; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <h2>Admin Authentication</h2>
+    <form onsubmit="handleAdminLogin(event)">
+      <input type="text" class="form-control" value="admin" style="margin-bottom:1rem; width:100%; padding:0.8rem;" required>
+      <input type="password" class="form-control" value="password123" style="margin-bottom:1rem; width:100%; padding:0.8rem;" required>
+      <button type="submit" class="btn-dark-sm" style="width:100%; padding:0.9rem;">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<div class="admin-container">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="index.html" class="sidebar-logo">SkincareShop</a>
+      <p style="font-size:0.6rem; color:#aaa;">Admin Suite · 8 Topics</p>
+    </div>
+    <ul class="sidebar-nav">
+      <li class="nav-section-title">Core Operations</li>
+      <li><a href="index.html" class="nav-item"><span>📊</span> Dashboard Overview</a></li>
+      <li><a href="products.html" class="nav-item"><span>🧴</span> 1. จัดการสินค้า (Products)</a></li>
+      <li><a href="orders.html" class="nav-item"><span>📦</span> 2. คำสั่งซื้อ & เคลม (Orders)</a></li>
+      <li><a href="customers.html" class="nav-item"><span>👥</span> 3. สมาชิก & Skin Profile</a></li>
+      <li class="nav-section-title">Warehouse & Marketing</li>
+      <li><a href="inventory.html" class="nav-item"><span>🏬</span> 4. คลังสินค้า & Lot Batch</a></li>
+      <li><a href="marketing.html" class="nav-item"><span>🏷️</span> 5. การตลาด & Flash Sale</a></li>
+      <li class="nav-section-title">Content & System</li>
+      <li><a href="content.html" class="nav-item"><span>📝</span> 6. คอนเทนต์ & เลข อย.</a></li>
+      <li><a href="analytics.html" class="nav-item"><span>📈</span> 7. รายงานและวิเคราะห์</a></li>
+      <li><a href="roles.html" class="nav-item active"><span>🔐</span> 8. สิทธิ์แอดมิน & Audit Log</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">8. จัดการผู้ใช้งานแอดมิน & Audit Log (Role Management & Audit Trail)</h1>
+        <p style="font-size:0.8rem; color:#777;">แบ่งบทบาทสิทธิ์แอดมิน (Super Admin, พนักงานแพ็คของ, ฝ่ายการตลาด, ฝ่ายบัญชี) และบันทึก Log การเปลี่ยนแปลงข้อมูลย้อนหลัง</p>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="user-dropdown-wrapper" style="position:relative;">
+          <button class="user-profile-btn" onclick="toggleUserDropdown(event)">
+            <div class="user-avatar">VK</div>
+            <div>
+              <strong>Visada K.</strong>
+              <span style="font-size:0.65rem; color:#777; display:block;">Super Admin ▼</span>
+            </div>
+          </button>
+          <div class="user-dropdown-menu" id="userDropdown">
+            <strong>Visada K.</strong>
+            <p style="font-size:0.7rem; color:#777;">admin@skincareshop.com</p>
+            <hr style="margin:0.4rem 0;"/>
+            <button onclick="lockAdminSession()" class="dropdown-item" style="color:var(--status-danger);">🔒 ออกจากระบบ</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ADMIN ROLES MANAGEMENT TABLE -->
+    <div class="content-card">
+      <div class="card-header">
+        <h3 class="card-title">ผู้ดูแลระบบและขอบเขตสิทธิ์ (Admin Staff Roles)</h3>
+        <button class="btn-dark-sm" onclick="showToast('เปิดแบบฟอร์มเพิ่มบัญชีแอดมินใหม่')">+ เพิ่มบัญชีแอดมินใหม่</button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>แอดมิน / เจ้าหน้าที่</th>
+              <th>อีเมล</th>
+              <th>บทบาท (Role)</th>
+              <th>ขอบเขตสิทธิ์ที่เข้าถึงได้</th>
+              <th>สถานะบัญชี</th>
+              <th>การจัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Visada K. (วิชญาดา)</strong></td>
+              <td>visada@skincareshop.com</td>
+              <td><span class="status-badge badge-success">Super Admin</span></td>
+              <td>เข้าถึงได้ทุกส่วนของระบบ (Full Access)</td>
+              <td><span class="status-badge badge-success">Active</span></td>
+              <td><button class="btn-ghost-sm" onclick="showToast('แก้ไขสิทธิ์คุณ Visada')">⚙️ จัดการสิทธิ์</button></td>
+            </tr>
+            <tr>
+              <td><strong>Pattarapon M. (ภัทรพล)</strong></td>
+              <td>pattarapon@skincareshop.com</td>
+              <td><span class="status-badge badge-info">Pack & Shipping Staff</span></td>
+              <td>ดู/อัปเดตคำสั่งซื้อ & พิมพ์ใบพัสดุเท่านั้น</td>
+              <td><span class="status-badge badge-success">Active</span></td>
+              <td><button class="btn-ghost-sm" onclick="showToast('แก้ไขสิทธิ์คุณภัทรพล')">⚙️ จัดการสิทธิ์</button></td>
+            </tr>
+            <tr>
+              <td><strong>Jirada J. (จิรดา)</strong></td>
+              <td>jirada@skincareshop.com</td>
+              <td><span class="status-badge badge-warning">Marketing Specialist</span></td>
+              <td>จัดการโปรโมชั่น คูปอง และคอนเทนต์บล็อก</td>
+              <td><span class="status-badge badge-success">Active</span></td>
+              <td><button class="btn-ghost-sm" onclick="showToast('แก้ไขสิทธิ์คุณจิรดา')">⚙️ จัดการสิทธิ์</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AUDIT TRAIL LOGS TABLE -->
+    <div class="content-card">
+      <div class="card-header">
+        <h3 class="card-title">📜 ประวัติบันทึกการเปลี่ยนแปลงข้อมูลย้อนหลัง (Audit Trail Logs)</h3>
+        <button class="btn-ghost-sm" onclick="showToast('ส่งออกไฟล์ Audit Log .CSV')">📥 Export Audit Log</button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>ผู้ดำเนินการ</th>
+              <th>การกระทำ (Action)</th>
+              <th>ส่วนข้อมูลที่แก้ไข (Target Object)</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>22/07/2026 22:30:15</td>
+              <td><strong>Visada K. (Super Admin)</strong></td>
+              <td><span class="status-badge badge-info">UPDATE_PRODUCT</span></td>
+              <td>อัปเดตส่วนผสม INCI & เลข อย. #1001</td>
+              <td>192.168.1.105</td>
+            </tr>
+            <tr>
+              <td>22/07/2026 21:45:02</td>
+              <td><strong>Pattarapon M. (Staff)</strong></td>
+              <td><span class="status-badge badge-success">UPDATE_TRACKING</span></td>
+              <td>กรอกเลข Tracking KRY98765432 (#ORD-20260722-0001)</td>
+              <td>192.168.1.112</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+      const overlay = document.getElementById('authOverlay');
+      if (overlay) overlay.classList.add('hidden');
+    }
+  });
+
+  function handleAdminLogin(e) { e.preventDefault(); sessionStorage.setItem('adminLoggedIn', 'true'); document.getElementById('authOverlay').classList.remove('hidden'); showToast('เข้าสู่ระบบสำเร็จ'); }
+  function lockAdminSession() { sessionStorage.removeItem('adminLoggedIn'); document.getElementById('authOverlay').classList.remove('hidden'); }
+  function toggleUserDropdown(e) { e.stopPropagation(); document.getElementById('userDropdown').classList.toggle('open'); }
+  window.addEventListener('click', () => { const menu = document.getElementById('userDropdown'); if (menu) menu.classList.remove('open'); });
+  function showToast(m) { const c = document.getElementById('toastContainer'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = `<span>✨</span> <div>${m}</div>`; c.appendChild(t); setTimeout(() => t.remove(), 300); }
+</script>
+</body>
+</html>

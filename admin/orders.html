@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2. จัดการคำสั่งซื้อ (Order Management) — SkincareShop Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:   #0A0A0A;
+      --white:   #FFFFFF;
+      --cream:   #F7F5F2;
+      --warm:    #EDE9E3;
+      --gray:    #777777;
+      --gray-light: #F2EFEA;
+      --border:  #E0DDD8;
+      --serif:   'Cormorant Garamond', Georgia, serif;
+      --sans:    'Inter', sans-serif;
+      
+      /* Status Colors */
+      --status-success: #4A6741;
+      --status-warning: #8B6F5E;
+      --status-info:    #2A4B7C;
+      --status-danger:  #C0392B;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--black);
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    /* ── AUTH LOCK OVERLAY ── */
+    .auth-overlay {
+      position: fixed; inset: 0;
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .auth-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .auth-card {
+      background: var(--white);
+      width: 100%; max-width: 440px;
+      padding: 3rem 2.5rem;
+      border-radius: 4px;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .auth-badge {
+      font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase;
+      color: var(--gray); margin-bottom: 0.6rem; display: block;
+    }
+    .auth-title {
+      font-family: var(--serif); font-size: 2.2rem; font-weight: 300; margin-bottom: 0.5rem;
+    }
+    .auth-desc { font-size: 0.8rem; color: var(--gray); margin-bottom: 2rem; }
+
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label {
+      display: block; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--black); font-weight: 600; margin-bottom: 0.4rem;
+    }
+    .form-control {
+      width: 100%; padding: 0.8rem 1rem;
+      border: 1px solid var(--border); background: var(--white);
+      font-family: var(--sans); font-size: 0.88rem; color: var(--black);
+      transition: border-color 0.2s;
+    }
+    .form-control:focus { outline: none; border-color: var(--black); }
+
+    .btn-submit {
+      width: 100%; padding: 0.9rem;
+      background: var(--black); color: var(--white);
+      border: none; font-family: var(--sans); font-size: 0.75rem;
+      letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer;
+      transition: opacity 0.2s; margin-top: 0.5rem;
+    }
+    .btn-submit:hover { opacity: 0.85; }
+
+    /* ── LAYOUT ── */
+    .admin-container {
+      display: flex; min-height: 100vh;
+    }
+
+    /* Sidebar */
+    aside.sidebar {
+      width: 260px; background: var(--black); color: var(--white);
+      display: flex; flex-direction: column; justify-content: space-between;
+      position: fixed; top: 0; bottom: 0; left: 0; z-index: 90;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-header {
+      padding: 2rem 1.8rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo {
+      font-family: var(--serif); font-size: 1.5rem; font-weight: 400;
+      letter-spacing: 0.1em; color: var(--white); text-decoration: none;
+      display: block;
+    }
+    .sidebar-tag {
+      font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(255,255,255,0.4); margin-top: 0.2rem;
+    }
+
+    .sidebar-nav { list-style: none; padding: 1.5rem 0; flex: 1; overflow-y: auto; }
+    .nav-section-title {
+      font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); padding: 0.8rem 1.8rem 0.4rem; font-weight: 500;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 0.9rem;
+      padding: 0.85rem 1.8rem; color: rgba(255,255,255,0.65);
+      text-decoration: none; font-size: 0.82rem; cursor: pointer;
+      border-left: 3px solid transparent; transition: all 0.2s;
+    }
+    .nav-item:hover, .nav-item.active {
+      color: var(--white); background: rgba(255,255,255,0.05);
+      border-left-color: var(--white);
+    }
+    .nav-item .badge {
+      margin-left: auto; background: var(--status-danger); color: white;
+      font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 10px; font-weight: 600;
+    }
+
+    /* Main Content */
+    main.main-content {
+      margin-left: 260px; flex: 1; padding: 2rem 3rem 4rem;
+      min-width: 0; background: var(--cream);
+    }
+
+    /* Top Header Bar */
+    header.topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2.5rem; padding-bottom: 1.2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-title { font-family: var(--serif); font-size: 2.2rem; font-weight: 300; }
+    .page-sub { font-size: 0.78rem; color: var(--gray); margin-top: 0.1rem; }
+
+    .topbar-actions { display: flex; align-items: center; gap: 1.2rem; }
+    .search-box {
+      position: relative; width: 240px;
+    }
+    .search-box input {
+      width: 100%; padding: 0.55rem 0.9rem 0.55rem 2.2rem;
+      border: 1px solid var(--border); background: var(--white);
+      font-size: 0.8rem; border-radius: 2px;
+    }
+    .search-box input:focus { outline: none; border-color: var(--black); }
+    .search-box span { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--gray); font-size: 0.85rem; }
+
+    .notif-bell {
+      position: relative; background: var(--white); border: 1px solid var(--border);
+      width: 36px; height: 36px; border-radius: 2px; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; transition: border-color 0.2s;
+    }
+    .notif-bell:hover { border-color: var(--black); }
+    .notif-dot {
+      position: absolute; top: 6px; right: 6px; width: 8px; height: 8px;
+      background: var(--status-danger); border-radius: 50%;
+    }
+
+    /* Topbar User Profile & Dropdown */
+    .user-profile-btn {
+      display: flex; align-items: center; gap: 0.7rem;
+      background: var(--white); border: 1px solid var(--border);
+      padding: 0.4rem 0.8rem; border-radius: 2px; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .user-profile-btn:hover { border-color: var(--black); }
+    .user-avatar {
+      width: 30px; height: 30px; background: var(--black); color: var(--white);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 0.75rem;
+    }
+    .user-details { text-align: left; line-height: 1.2; }
+    .user-name { font-weight: 600; font-size: 0.78rem; display: block; }
+    .user-role { font-size: 0.65rem; color: var(--gray); display: block; }
+
+    .user-dropdown-menu {
+      position: absolute; top: 48px; right: 0; width: 220px;
+      background: var(--white); border: 1px solid var(--border);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.15); z-index: 100;
+      display: none; border-radius: 2px; padding: 0.8rem;
+    }
+    .user-dropdown-menu.open { display: block; animation: fadeIn 0.2s ease; }
+    .dropdown-header { margin-bottom: 0.6rem; }
+    .dropdown-header strong { display: block; font-size: 0.85rem; }
+    .dropdown-header p { font-size: 0.7rem; color: var(--gray); }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 0.5rem;
+      width: 100%; padding: 0.6rem 0.8rem; border: none; background: none;
+      font-size: 0.78rem; color: var(--black); text-decoration: none;
+      cursor: pointer; text-align: left; border-radius: 2px; transition: background 0.2s;
+    }
+    .dropdown-item:hover { background: var(--cream); }
+    .dropdown-item.logout { color: var(--status-danger); margin-top: 0.2rem; }
+    .dropdown-item.logout:hover { background: rgba(192, 57, 43, 0.08); }
+
+    /* Notification Drawer */
+    .notif-drawer {
+      position: absolute; top: 48px; right: 0; width: 340px;
+      background: var(--white); border: 1px solid var(--border);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.15); z-index: 100;
+      display: none; border-radius: 2px; overflow: hidden;
+    }
+    .notif-drawer.open { display: block; }
+    .notif-header {
+      padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--gray-light);
+    }
+    .notif-header h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    .notif-list { max-height: 300px; overflow-y: auto; }
+    .notif-item {
+      padding: 0.85rem 1.2rem; border-bottom: 1px solid var(--border);
+      font-size: 0.78rem; transition: background 0.2s;
+    }
+    .notif-item:hover { background: var(--cream); }
+    .notif-item .time { font-size: 0.65rem; color: var(--gray); margin-top: 0.2rem; }
+
+    /* ── CARDS & TABLES ── */
+    .content-card {
+      background: var(--white); border: 1px solid var(--border);
+      padding: 1.8rem; margin-bottom: 2.5rem; border-radius: 2px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.4rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-family: var(--serif); font-size: 1.5rem; font-weight: 400; }
+
+    .btn-dark-sm {
+      background: var(--black); color: var(--white); padding: 0.55rem 1.2rem;
+      font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+      border: none; cursor: pointer; transition: opacity 0.2s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-dark-sm:hover { opacity: 0.8; }
+
+    .btn-ghost-sm {
+      background: transparent; color: var(--black); padding: 0.55rem 1.2rem;
+      font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+      border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-ghost-sm:hover { border-color: var(--black); background: var(--black); color: var(--white); }
+
+    /* Data Table */
+    .table-responsive { width: 100%; overflow-x: auto; }
+    table.data-table {
+      width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;
+    }
+    table.data-table th {
+      padding: 0.85rem 1rem; border-bottom: 2px solid var(--border);
+      font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--gray); font-weight: 600; background: var(--cream);
+    }
+    table.data-table td {
+      padding: 1rem; border-bottom: 1px solid var(--border); vertical-align: middle;
+    }
+    table.data-table tr:hover td { background: rgba(0,0,0,0.015); }
+
+    /* Badges */
+    .status-badge {
+      display: inline-block; padding: 0.25rem 0.6rem; font-size: 0.65rem;
+      letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+      border-radius: 2px;
+    }
+    .badge-success { background: rgba(74, 103, 65, 0.12); color: var(--status-success); }
+    .badge-warning { background: rgba(139, 111, 94, 0.12); color: var(--status-warning); }
+    .badge-info    { background: rgba(42, 75, 124, 0.12); color: var(--status-info); }
+    .badge-danger  { background: rgba(192, 57, 43, 0.12); color: var(--status-danger); }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(10,10,10,0.6);
+      backdrop-filter: blur(4px); z-index: 1000; display: none;
+      align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: var(--white); width: 100%; max-width: 650px;
+      padding: 2.2rem; border-radius: 4px; position: relative;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 1.5rem;
+    }
+    .modal-title { font-family: var(--serif); font-size: 1.8rem; font-weight: 300; }
+    .modal-close { background: none; border: none; font-size: 1.4rem; color: var(--gray); cursor: pointer; }
+    .modal-close:hover { color: var(--black); }
+
+    /* Toast Alert */
+    .toast-container {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 10000;
+      display: flex; flex-direction: column; gap: 0.8rem;
+    }
+    .toast {
+      background: var(--black); color: var(--white); padding: 0.9rem 1.4rem;
+      border-radius: 2px; font-size: 0.8rem; display: flex; align-items: center;
+      gap: 0.8rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: toastIn 0.3s ease;
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* Filter Bar */
+    .filter-row {
+      display: flex; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 1.2rem; align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      aside.sidebar { transform: translateX(-100%); }
+      aside.sidebar.mobile-open { transform: translateX(0); }
+      main.main-content { margin-left: 0; padding: 1.5rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── AUTH LOGIN OVERLAY ── -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <span class="auth-badge">SkincareShop · Admin Protection</span>
+    <h2 class="auth-title">Admin Authentication</h2>
+    <p class="auth-desc">กรุณาลงชื่อเข้าใช้ด้วยบัญชีผู้ดูแลระบบเพื่อเข้าสู่ระบบจัดการ</p>
+    <form onsubmit="handleAdminLogin(event)">
+      <div class="form-group">
+        <label>Username / Email</label>
+        <input type="text" id="adminUser" class="form-control" value="admin" required placeholder="admin@skincareshop.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="adminPass" class="form-control" value="password123" required>
+      </div>
+      <button type="submit" class="btn-submit">Sign In to Dashboard</button>
+    </form>
+    <p style="margin-top: 1.2rem; font-size: 0.72rem; color: var(--gray); text-align: center;">
+      🔒 Demo Admin Credential: <strong>admin</strong> / <strong>password123</strong>
+    </p>
+  </div>
+</div>
+
+<!-- ── MAIN LAYOUT ── -->
+<div class="admin-container">
+  
+  <!-- SIDEBAR NAVIGATION -->
+  <aside class="sidebar" id="sidebar">
+    <div>
+      <div class="sidebar-header">
+        <a href="index.html" class="sidebar-logo">SkincareShop</a>
+        <p class="sidebar-tag">Admin Management Portal</p>
+      </div>
+      
+      <ul class="sidebar-nav">
+        <li class="nav-section-title">Core Operations</li>
+        <li>
+          <a href="index.html" class="nav-item">
+            <span>📊</span> Dashboard & Overview
+          </a>
+        </li>
+        <li>
+          <a href="products.html" class="nav-item">
+            <span>🧴</span> 1. จัดการสินค้า (Products)
+          </a>
+        </li>
+        <li>
+          <a href="orders.html" class="nav-item active">
+            <span>📦</span> 2. จัดการคำสั่งซื้อ (Orders)
+            <span class="badge">3 New</span>
+          </a>
+        </li>
+        <li>
+          <a href="users.html" class="nav-item">
+            <span>👥</span> 3. จัดการสมาชิก (Users)
+          </a>
+        </li>
+        
+        <li class="nav-section-title" style="margin-top:0.8rem;">Store Growth</li>
+        <li>
+          <a href="analytics.html" class="nav-item">
+            <span>📈</span> 4. รายงาน & สถิติ (Analytics)
+          </a>
+        </li>
+        <li>
+          <a href="categories.html" class="nav-item">
+            <span>🏷️</span> 5. หมวดหมู่ & โปรโมชั่น
+          </a>
+        </li>
+        <li>
+          <a href="notifications.html" class="nav-item">
+            <span>🔔</span> 6. การแจ้งเตือน & LINE
+          </a>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="main-content">
+    
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">2. จัดการคำสั่งซื้อ (Order Management)</h1>
+        <p class="page-sub">ตรวจสอบรายการสั่งซื้อ ตรวจสลิป และอัปเดตสถานะจัดส่ง</p>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" placeholder="ค้นหาสินค้า, คำสั่งซื้อ, ลูกค้า..." onkeyup="globalSearch(this.value)">
+        </div>
+
+        <div style="position:relative;">
+          <div class="notif-bell" onclick="toggleNotifDrawer()">
+            🔔 <span class="notif-dot"></span>
+          </div>
+
+          <div class="notif-drawer" id="notifDrawer">
+            <div class="notif-header">
+              <h4>System Alerts (3)</h4>
+              <span style="font-size:0.65rem; color:var(--gray); cursor:pointer;" onclick="clearNotifs()">Mark all read</span>
+            </div>
+            <div class="notif-list">
+              <div class="notif-item">
+                <strong>🛒 คำสั่งซื้อใหม่ #ORD-20260722-0001</strong>
+                <p>ยอดชำระ ฿1,500 ผ่าน PromptPay</p>
+                <div class="time">2 นาทีที่แล้ว</div>
+              </div>
+              <div class="notif-item">
+                <strong>⚠️ สต็อกสินค้าต่ำกว่าเกณฑ์!</strong>
+                <p>Radiance Oil คงเหลือเพียง 4 ชิ้น</p>
+                <div class="time">15 นาทีที่แล้ว</div>
+              </div>
+              <div class="notif-item">
+                <strong>📲 LINE Notify Webhook Active</strong>
+                <p>ส่งการแจ้งเตือนคำสั่งซื้อไปยังกลุ่ม Admin แล้ว</p>
+                <div class="time">1 ชั่วโมงที่แล้ว</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TOP RIGHT USER PROFILE DROPDOWN -->
+        <div class="user-dropdown-wrapper" style="position:relative;">
+          <button class="user-profile-btn" onclick="toggleUserDropdown(event)">
+            <div class="user-avatar">VK</div>
+            <div class="user-details">
+              <span class="user-name">Visada K.</span>
+              <span class="user-role">Super Admin ▼</span>
+            </div>
+          </button>
+          
+          <div class="user-dropdown-menu" id="userDropdown">
+            <div class="dropdown-header">
+              <strong>Visada K.</strong>
+              <p>admin@skincareshop.com</p>
+              <span class="status-badge badge-success" style="margin-top:0.4rem;">Super Administrator</span>
+            </div>
+            <hr style="border:0; border-top:1px solid var(--border); margin:0.5rem 0;"/>
+            <button onclick="showToast('เปิดการตั้งค่าระบบผู้ดูแล')" class="dropdown-item">⚙️ ตั้งค่าระบบ (Settings)</button>
+            <button onclick="lockAdminSession()" class="dropdown-item logout">🔒 ออกจากระบบ (Logout)</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ORDER MANAGEMENT CONTENT -->
+    <div class="content-card">
+      <div class="card-header">
+        <h3 class="card-title">จัดการคำสั่งซื้อ (Order Management)</h3>
+        <span class="status-badge badge-info">3 คำสั่งซื้อใหม่ที่ต้องจัดการ</span>
+      </div>
+
+      <div class="filter-row">
+        <button class="btn-dark-sm" onclick="filterOrders('all')">ทั้งหมด (3)</button>
+        <button class="btn-ghost-sm" onclick="filterOrders('pending_payment')">⏳ pending_payment (รอชำระเงิน)</button>
+        <button class="btn-ghost-sm" onclick="filterOrders('confirmed')">💳 confirmed (ชำระแล้ว/รอจัดส่ง)</button>
+        <button class="btn-ghost-sm" onclick="filterOrders('shipping')">🚚 shipping (กำลังจัดส่ง)</button>
+        <button class="btn-ghost-sm" onclick="filterOrders('delivered')">✅ delivered (ส่งสำเร็จแล้ว)</button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order ID & วันสร้าง (createdAt)</th>
+              <th>ลูกค้า (shippingAddress)</th>
+              <th>รายการสินค้า (items)</th>
+              <th>ยอดรวม (totalAmount)</th>
+              <th>สถานะ API (status)</th>
+              <th>การจัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="orderTableBody">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── MODAL: ORDER DETAIL & STATUS UPDATE ── -->
+<div class="modal-backdrop" id="modalOrderDetail">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">รายละเอียดคำสั่งซื้อ <span id="modalOrdId">ORD-20260722-0001</span></h3>
+      <button class="modal-close" onclick="closeModal('modalOrderDetail')">✕</button>
+    </div>
+    
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom:1.5rem;">
+      <div id="modalCustomerInfo">
+        <!-- Customer Address rendered here -->
+      </div>
+      <div style="background:var(--cream); padding:1rem; border:1px solid var(--border);">
+        <h4 style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gray); margin-bottom:0.4rem;">สลิป / การชำระเงิน (Payment)</h4>
+        <div style="text-align:center; padding:1rem; background:#fff; border:1px dashed var(--border);">
+          <span style="font-size:2rem">📄</span>
+          <p style="font-size:0.75rem; color:var(--status-success);">สถานะชำระเงิน: Success</p>
+          <span style="font-size:0.65rem; color:var(--gray);">Ref: PAY-20260722-0001</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.5rem;">
+      <h4 style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gray); margin-bottom:0.6rem;">อัปเดตสถานะคำสั่งซื้อ (PUT /api/orders/:id/status)</h4>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <button class="btn-ghost-sm" onclick="updateOrderStatus('pending_payment')">⏳ pending_payment (รอชำระ)</button>
+        <button class="btn-dark-sm" onclick="updateOrderStatus('confirmed')">💳 confirmed (ยืนยันรับเงิน/เตรียมจัดส่ง)</button>
+        <button class="btn-ghost-sm" onclick="updateOrderStatus('shipping')">🚚 shipping (กำลังจัดส่ง)</button>
+        <button class="btn-ghost-sm" onclick="updateOrderStatus('delivered')">✅ delivered (ส่งสำเร็จ)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST CONTAINER ── -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ── JAVASCRIPT LOGIC ── -->
+<script>
+  let activeSelectedOrderId = null;
+  let ordersList = [
+    { id: 1, orderId: "ORD-20260722-0001", customerId: 1, status: "pending_payment", items: [{ orderItemId: 1, productId: 1001, productName: "Hyaluronic Acid Serum 30ml", qty: 2, unitPrice: 590.00, subtotal: 1180.00 }, { orderItemId: 2, productId: 1006, productName: "Sunscreen SPF50+ 50ml", qty: 1, unitPrice: 320.00, subtotal: 320.00 }], totalAmount: 1500.00, shippingAddress: { recipient: "คุณศิรินทร์ภา วงศ์อุบล", address: "123/45 ถนนสุขุมวิท เขตคลองเตย", province: "กรุงเทพมหานคร", postalCode: "10110" }, createdAt: "2026-07-22T20:45:00+07:00" },
+    { id: 2, orderId: "ORD-20260722-0002", customerId: 2, status: "confirmed", items: [{ orderItemId: 1, productId: 1002, productName: "Vitamin C Brightening Toner 150ml", qty: 1, unitPrice: 450.00, subtotal: 450.00 }], totalAmount: 450.00, shippingAddress: { recipient: "คุณภัทรพงศ์ อนันต์", address: "88/12 ถนนแจ้งวัฒนะ", province: "นนทบุรี", postalCode: "11000" }, createdAt: "2026-07-22T18:12:00+07:00" },
+    { id: 3, orderId: "ORD-20260701-0001", customerId: 1, status: "delivered", items: [{ orderItemId: 1, productId: 1001, productName: "Hyaluronic Acid Serum 30ml", qty: 1, unitPrice: 590.00, subtotal: 590.00 }], totalAmount: 590.00, shippingAddress: { recipient: "คุณณัฐณิชา กิตติช่วง", address: "55/9 ถนนห้วยแก้ว", province: "เชียงใหม่", postalCode: "50200" }, createdAt: "2026-07-01T10:15:00+07:00" }
+  ];
+
+  const statusBadgeMap = {
+    'pending_payment': '<span class="status-badge badge-warning">⏳ pending_payment</span>',
+    'confirmed':       '<span class="status-badge badge-info">💳 confirmed</span>',
+    'shipping':        '<span class="status-badge badge-info">🚚 shipping</span>',
+    'delivered':       '<span class="status-badge badge-success">✅ delivered</span>'
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+      const overlay = document.getElementById('authOverlay');
+      if (overlay) overlay.classList.add('hidden');
+    }
+    renderOrderTable(ordersList);
+  });
+
+  function handleAdminLogin(e) {
+    e.preventDefault();
+    sessionStorage.setItem('adminLoggedIn', 'true');
+    document.getElementById('authOverlay').classList.add('hidden');
+    showToast('เข้าสู่ระบบผู้ดูแลสำเร็จ! ยินดีต้อนรับ คุณ Visada');
+  }
+
+  function lockAdminSession() {
+    sessionStorage.removeItem('adminLoggedIn');
+    document.getElementById('authOverlay').classList.remove('hidden');
+    showToast('ล๊อคหน้าจอเซสชันเรียบร้อยแล้ว');
+  }
+
+  function toggleUserDropdown(e) {
+    if (e) e.stopPropagation();
+    document.getElementById('userDropdown').classList.toggle('open');
+  }
+
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('.user-dropdown-wrapper')) {
+      const menu = document.getElementById('userDropdown');
+      if (menu) menu.classList.remove('open');
+    }
+  });
+
+  function renderOrderTable(items) {
+    const tbody = document.getElementById('orderTableBody');
+    tbody.innerHTML = items.map(o => `
+      <tr>
+        <td>
+          <strong>#${o.orderId}</strong>
+          <div style="font-size:0.7rem; color:var(--gray);">${o.createdAt ? o.createdAt.split('T')[0] : ''}</div>
+        </td>
+        <td>
+          <strong>${o.shippingAddress.recipient}</strong>
+          <div style="font-size:0.7rem; color:var(--gray);">${o.shippingAddress.province} · ${o.shippingAddress.address}</div>
+        </td>
+        <td>
+          <div style="font-size:0.8rem;">${o.items.map(i => `${i.productName} x ${i.qty}`).join(', ')}</div>
+        </td>
+        <td><strong>฿${Number(o.totalAmount).toLocaleString()}</strong></td>
+        <td>${statusBadgeMap[o.status] || `<span class="status-badge">${o.status}</span>`}</td>
+        <td>
+          <button class="btn-dark-sm" onclick="openOrderDetail('${o.orderId}')">👁️ ดูรายละเอียด / อัปเดต</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function filterOrders(status) {
+    if (status === 'all') renderOrderTable(ordersList);
+    else renderOrderTable(ordersList.filter(o => o.status === status));
+  }
+
+  function openOrderDetail(ordId) {
+    activeSelectedOrderId = ordId;
+    const ord = ordersList.find(o => o.orderId === ordId);
+    if (ord) {
+      document.getElementById('modalOrdId').textContent = ord.orderId;
+      document.getElementById('modalCustomerInfo').innerHTML = `
+        <h4 style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gray); margin-bottom:0.4rem;">ข้อมูลผู้สั่งซื้อ (shippingAddress)</h4>
+        <p><strong>${ord.shippingAddress.recipient}</strong></p>
+        <p style="font-size:0.8rem; color:var(--gray);">${ord.shippingAddress.address} ${ord.shippingAddress.province} ${ord.shippingAddress.postalCode}</p>
+        <p style="font-size:0.8rem; margin-top:0.4rem;">ยอดรวมคำสั่งซื้อ: <strong>฿${Number(ord.totalAmount).toLocaleString()}</strong></p>
+      `;
+    }
+    document.getElementById('modalOrderDetail').classList.add('open');
+  }
+
+  function updateOrderStatus(newStatus) {
+    const ord = ordersList.find(o => o.orderId === activeSelectedOrderId);
+    if (ord) {
+      ord.status = newStatus;
+      renderOrderTable(ordersList);
+      closeModal('modalOrderDetail');
+      showToast(`อัปเดตคำสั่งซื้อ ${ord.orderId} เป็น status: "${newStatus}" แล้ว`);
+    }
+  }
+
+  function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<span>✨</span> <div>${message}</div>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  function toggleNotifDrawer() {
+    document.getElementById('notifDrawer').classList.toggle('open');
+  }
+
+  function clearNotifs() {
+    document.querySelector('.notif-list').innerHTML = '<div style="padding:1rem; text-align:center; color:var(--gray); font-size:0.75rem;">ไม่มีการแจ้งเตือนใหม่</div>';
+    document.querySelector('.notif-dot').style.display = 'none';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  function globalSearch(query) {
+    if (query.length > 2) {
+      showToast(`กำลังค้นหา "${query}"...`);
+    }
+  }
+</script>
+</body>
+</html>
