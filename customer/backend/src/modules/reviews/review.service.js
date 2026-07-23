@@ -8,7 +8,9 @@ const getReviewsByProduct = (productId) => {
 };
 
 /**
- * เขียนรีวิว (ต้องไม่รีวิวซ้ำในออเดอร์เดียวกัน)
+ * เขียนรีวิว (Verified Purchase)
+ * — ต้องเคยซื้อสินค้านี้และออเดอร์นั้นมีสถานะ delivered แล้วเท่านั้น
+ * — ลูกค้า 1 คน รีวิวสินค้าแต่ละชิ้นได้ 1 ครั้ง
  */
 const createReview = (customerId, { productId, orderId, rating, comment }) => {
   if (!rating || rating < 1 || rating > 5) {
@@ -22,23 +24,36 @@ const createReview = (customerId, { productId, orderId, rating, comment }) => {
     throw err;
   }
 
-  // ตรวจสอบว่าเคยรีวิวสินค้านี้ในออเดอร์นี้แล้วหรือยัง
-  if (orderId) {
-    const duplicate = findOne(
-      'reviews',
-      (r) => r.productId === Number(productId) && r.customerId === customerId && r.orderId === orderId
-    );
-    if (duplicate) {
-      const err = new Error('คุณได้รีวิวสินค้านี้ในออเดอร์นี้แล้ว');
-      err.statusCode = 409;
-      throw err;
-    }
+  // ── Verified Purchase: ต้องมีออเดอร์ delivered ที่มีสินค้านี้ ──
+  const purchasedOrders = findAll(
+    'orders',
+    (o) =>
+      o.customerId === customerId &&
+      o.status === 'delivered' &&
+      (o.items || []).some((it) => it.productId === Number(productId))
+  );
+  if (purchasedOrders.length === 0) {
+    const err = new Error('รีวิวได้เฉพาะสินค้าที่คุณซื้อและได้รับแล้วเท่านั้น');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // ── กันรีวิวซ้ำ: 1 คน / 1 สินค้า / 1 รีวิว ──
+  const duplicate = findOne(
+    'reviews',
+    (r) => r.productId === Number(productId) && r.customerId === customerId
+  );
+  if (duplicate) {
+    const err = new Error('คุณได้รีวิวสินค้านี้แล้ว');
+    err.statusCode = 409;
+    throw err;
   }
 
   const newReview = create('reviews', {
     productId: Number(productId),
     customerId,
-    orderId: orderId || null,
+    // ถ้า frontend ไม่ส่ง orderId มา ให้ผูกกับออเดอร์แรกที่ซื้อสินค้านี้อัตโนมัติ
+    orderId: orderId || purchasedOrders[0].orderId,
     rating: Number(rating),
     comment: comment.trim(),
     createdAt: new Date().toISOString(),

@@ -18,8 +18,14 @@ const getProducts = ({ skinType, brand, category, minPrice, maxPrice, search } =
     // filter ราคา
     if (minPrice !== undefined && p.price < Number(minPrice)) return false;
     if (maxPrice !== undefined && p.price > Number(maxPrice)) return false;
-    // search ชื่อสินค้า
-    if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
+    // search ชื่อสินค้า / หมวดหมู่ / แบรนด์ / คำอธิบาย
+    if (search) {
+      const q = search.toLowerCase();
+      const haystack = [p.name, p.category, p.brand, p.description || '']
+        .join(' ')
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
     return true;
   });
   return products;
