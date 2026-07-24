@@ -291,4 +291,4 @@ const Payments = {
 };
 
 // Export เพื่อใช้ใน HTML (global scope)
-window.GlowtimeAPI = { Auth, Products, Cart, Orders, Reviews, Payments, getUser, getToken };
+window.GlowtimeAPI = { Auth, Products, Cart, Orders, Reviews, Payments, getUser, getToken, normalizeProduct };

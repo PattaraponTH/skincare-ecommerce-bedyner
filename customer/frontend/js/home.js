@@ -294,13 +294,15 @@ async function loadPdpReviews(productId) {
     const wrap = document.getElementById('pdpReviewsWrap');
     const list = document.getElementById('pdpReviews');
     list.innerHTML = reviews.slice(0, 3).map(r => {
-      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
-      const date  = new Date(r.createdAt).toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+      const stars = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+      const d = r.createdAt ? new Date(r.createdAt) : null;
+      const isValidDate = d && !isNaN(d.getTime());
+      const date = isValidDate ? d.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' }) : '';
       return `
         <div class="pdp-review-item">
           <div class="pdp-review-header">
             <span class="pdp-review-stars">${stars}</span>
-            <span class="pdp-review-date">${date}</span>
+            ${date ? `<span class="pdp-review-date">${date}</span>` : ''}
           </div>
           <p class="pdp-review-text">${r.comment}</p>
         </div>`;
