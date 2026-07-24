@@ -340,10 +340,31 @@ async function pdpAddToCart() {
   }
 }
 
+// ─── Hero Slider (Auto Play) ──────────────────────────
+let _heroSlideIdx = 0;
+let _heroTimer = null;
+
+function setHeroSlide(idx) {
+  const slides = document.querySelectorAll('.hero-slide');
+  const dots   = document.querySelectorAll('.hero-slider-dots .dot');
+  if (!slides.length) return;
+  _heroSlideIdx = (idx + slides.length) % slides.length;
+  slides.forEach((s, i) => s.classList.toggle('active', i === _heroSlideIdx));
+  dots.forEach((d, i) => d.classList.toggle('active', i === _heroSlideIdx));
+}
+
+function startHeroSlider() {
+  if (_heroTimer) clearInterval(_heroTimer);
+  _heroTimer = setInterval(() => {
+    setHeroSlide(_heroSlideIdx + 1);
+  }, 4000);
+}
+
 // ─── Init ─────────────────────────────────────────────
 (async function init() {
   updateAuthUI();
   updateGuestCartBadge();
+  startHeroSlider();
   await loadProducts();
   if (_api.Auth.isLoggedIn()) refreshCartCount();
 })();
