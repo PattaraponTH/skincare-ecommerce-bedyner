@@ -4,7 +4,7 @@ const { pool } = require('../../config/store');
  * ดึงรีวิวของสินค้า
  */
 const getReviewsByProduct = async (productId) => {
-  const [reviews] = await pool.query(
+  let [reviews] = await pool.query(
     `SELECT
       r.review_id  AS id,
       r.rating,
@@ -17,6 +17,18 @@ const getReviewsByProduct = async (productId) => {
      ORDER BY r.review_id DESC`,
     [Number(productId)]
   );
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT r.review_id AS id, r.created_at AS createdAt FROM reviews r WHERE r.product_id = ?`,
+      [Number(productId)]
+    );
+    const dateMap = new Map(rows.map(row => [row.id, row.createdAt]));
+    reviews = reviews.map(r => ({ ...r, createdAt: dateMap.get(r.id) }));
+  } catch (e) {
+    // ถ้าไม่มี column created_at ใน DB ให้รันต่อไปได้โดยไม่ crash
+  }
+
   return reviews;
 };
 
