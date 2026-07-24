@@ -17,7 +17,9 @@ const getProducts = async ({ skinType, brand, category, minPrice, maxPrice, sear
       b.country      AS brandCountry,
       c.name         AS category,
       c.skin_type_target AS skinTypeTarget,
-      (SELECT image_url FROM product_images WHERE product_id = p.product_id LIMIT 1) AS imageUrl
+      (SELECT image_url FROM product_images WHERE product_id = p.product_id LIMIT 1) AS imageUrl,
+      COALESCE((SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.product_id), 0) AS averageRating,
+      COALESCE((SELECT COUNT(*) FROM reviews WHERE product_id = p.product_id), 0) AS reviewCount
     FROM products p
     JOIN brands b    ON b.brand_id    = p.brand_id
     JOIN categories c ON c.category_id = p.category_id
@@ -70,7 +72,9 @@ const getProductById = async (id) => {
       b.country      AS brandCountry,
       c.name         AS category,
       c.skin_type_target AS skinTypeTarget,
-      (SELECT image_url FROM product_images WHERE product_id = p.product_id LIMIT 1) AS imageUrl
+      (SELECT image_url FROM product_images WHERE product_id = p.product_id LIMIT 1) AS imageUrl,
+      COALESCE((SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.product_id), 0) AS averageRating,
+      COALESCE((SELECT COUNT(*) FROM reviews WHERE product_id = p.product_id), 0) AS reviewCount
     FROM products p
     JOIN brands b    ON b.brand_id    = p.brand_id
     JOIN categories c ON c.category_id = p.category_id
