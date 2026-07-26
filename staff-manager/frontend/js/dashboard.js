@@ -332,7 +332,7 @@ async function switchTimeframe(period, btn) {
     if (revEl) animateCounter(revEl, Number(data.totalRevenue || 0), '฿');
     if (ordEl) animateCounter(ordEl, Number(data.totalOrders || 0));
     const revMetaEl = document.getElementById('statTotalRevenueMeta');
-    if (revMetaEl) revMetaEl.textContent = `ยอดขายจาก Railway MySQL (${period})`;
+    if (revMetaEl) revMetaEl.textContent = `- (${period})`;
 
     if (_revenueChart) {
       _revenueChart.data.labels = data.labels;
