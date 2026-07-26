@@ -37,7 +37,19 @@ const usageHistory = [
   { date: '21 Jul 2026, 09:10', code: 'GLOW20', orderId: '#ORD-0721-001', customer: 'Nalinee S.', discount: '-฿310.00' }
 ];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // API-first: ลองดึงข้อมูลจาก backend ก่อน ถ้าไม่มีค่อย fallback mock
+  if (window.GlowtimeAdminAPI) {
+    try {
+      const apiData = await window.GlowtimeAdminAPI.Coupons.list();
+      if (apiData && apiData.length > 0) {
+        couponsList = apiData;
+      }
+    } catch (e) {
+      console.warn('[coupons.js] API unavailable, using mock data');
+    }
+  }
+
   renderCouponTable();
   renderUsageHistory();
   updateStats();
@@ -156,7 +168,7 @@ function editCoupon(id) {
   openModal('modalAddCoupon');
 }
 
-function saveCoupon(e) {
+async function saveCoupon(e) {
   e.preventDefault();
 
   const editId = document.getElementById('editCouponId').value;
@@ -176,6 +188,20 @@ function saveCoupon(e) {
     usageCount: isEdit ? (couponsList.find(c => c.id === Number(editId))?.usageCount || 0) : 0,
   };
 
+  // Try API
+  if (window.GlowtimeAdminAPI) {
+    try {
+      if (isEdit) {
+        await window.GlowtimeAdminAPI.Coupons.update(Number(editId), couponData);
+      } else {
+        await window.GlowtimeAdminAPI.Coupons.create(couponData);
+      }
+    } catch (e) {
+      console.warn('[coupons.js] API save failed, updating local only');
+    }
+  }
+
+  // Update local state
   if (isEdit) {
     const idx = couponsList.findIndex(c => c.id === Number(editId));
     if (idx !== -1) couponsList[idx] = couponData;
@@ -187,16 +213,25 @@ function saveCoupon(e) {
   updateStats();
   closeModal('modalAddCoupon');
   resetCouponForm();
-  showToast(`Coupon "${couponData.code}" ${isEdit ? 'updated' : 'created'} successfully!`);
+  showToast(`Coupon "${couponData.code}" ${isEdit ? 'updated' : 'created'} successfully! ✅`);
 }
 
-function deleteCoupon(id) {
+async function deleteCoupon(id) {
   const coupon = couponsList.find(c => c.id === id);
   if (!coupon) return;
-  if (confirm(`Delete coupon "${coupon.code}"? This action cannot be undone.`)) {
-    couponsList = couponsList.filter(c => c.id !== id);
-    renderCouponTable();
-    updateStats();
-    showToast(`Coupon "${coupon.code}" has been deleted`);
+  if (!confirm(`Delete coupon "${coupon.code}"? This action cannot be undone.`)) return;
+
+  // Try API
+  if (window.GlowtimeAdminAPI) {
+    try {
+      await window.GlowtimeAdminAPI.Coupons.delete(id);
+    } catch (e) {
+      console.warn('[coupons.js] API delete failed, removing locally');
+    }
   }
+
+  couponsList = couponsList.filter(c => c.id !== id);
+  renderCouponTable();
+  updateStats();
+  showToast(`Coupon "${coupon.code}" has been deleted`);
 }

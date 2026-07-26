@@ -252,15 +252,97 @@ const AdminStock = {
   },
 };
 
+// ── Admin Categories Module ──────────────────────────────────
+const AdminCategories = {
+  async list() {
+    try {
+      const res = await adminApiFetch('/api/manager/categories');
+      return res.data;
+    } catch {
+      return null; // fallback → categories.js ใช้ MOCK_CATEGORIES
+    }
+  },
+
+  async create(data) {
+    const res = await adminApiFetch('/api/manager/categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async update(id, data) {
+    const res = await adminApiFetch(`/api/manager/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async delete(id) {
+    const res = await adminApiFetch(`/api/manager/categories/${id}`, { method: 'DELETE' });
+    return res.data;
+  },
+};
+
+// ── Admin Coupons Module ──────────────────────────────────────
+const AdminCoupons = {
+  async list() {
+    try {
+      const res = await adminApiFetch('/api/manager/coupons');
+      return res.data;
+    } catch {
+      return null; // fallback → coupons.js ใช้ MOCK_COUPONS
+    }
+  },
+
+  async validate(code) {
+    try {
+      const res = await adminApiFetch(`/api/manager/coupons/validate/${encodeURIComponent(code)}`);
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async create(data) {
+    const res = await adminApiFetch('/api/manager/coupons', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async update(id, data) {
+    const res = await adminApiFetch(`/api/manager/coupons/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async delete(id) {
+    const res = await adminApiFetch(`/api/manager/coupons/${id}`, { method: 'DELETE' });
+    return res.data;
+  },
+
+  async toggleStatus(id) {
+    const res = await adminApiFetch(`/api/manager/coupons/${id}/toggle`, { method: 'PATCH' });
+    return res.data;
+  },
+};
+
 // Export to Global Scope
 window.GlowtimeAdminAPI = {
-  Auth:      AdminAuth,
-  Products:  AdminProducts,
-  Orders:    AdminOrders,
-  Reports:   AdminReports,
-  Users:     AdminUsers,
-  Shipments: AdminShipments,
-  Stock:     AdminStock,
+  Auth:       AdminAuth,
+  Products:   AdminProducts,
+  Orders:     AdminOrders,
+  Reports:    AdminReports,
+  Users:      AdminUsers,
+  Shipments:  AdminShipments,
+  Stock:      AdminStock,
+  Categories: AdminCategories,
+  Coupons:    AdminCoupons,
   getAdminToken,
   getAdminUser,
 };

@@ -18,8 +18,8 @@ function renderAdminSidebar() {
     {
       title: "Core System",
       items: [
-        { href: "index.html", label: "Dashboard & Analytics" },
-        { href: "orders.html", label: "Orders & Payments", badge: "3" },
+        { href: "index.html",     label: "Dashboard & Analytics" },
+        { href: "orders.html",    label: "Orders & Payments", badge: "3" },
         { href: "customers.html", label: "Customers & Skin Profiles" }
       ]
     },

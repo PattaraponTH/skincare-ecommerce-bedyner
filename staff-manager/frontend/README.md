@@ -45,7 +45,7 @@
 
 **`js/topbar.js`** — render header, user dropdown, Settings → `settings.html`, Logout
 
-**`js/api.js`** — wrapper เชื่อม backend ที่ `http://localhost:5000` ถ้าไม่ตอบจะ fallback mock data
+**`js/api.js`** — wrapper เชื่อม backend ที่ `http://localhost:5000`fallback mock data
 
 **`js/products.js`** — productsList array, renderProductTable, Add/Edit (shared modal), image preview
 
