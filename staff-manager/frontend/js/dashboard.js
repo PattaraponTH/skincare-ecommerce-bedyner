@@ -430,19 +430,22 @@ function renderLowStockList(products) {
     return;
   }
 
-  el.innerHTML = products.map(p => `
-    <div class="low-stock-item">
-      <div class="low-stock-info">
-        <strong>${p.name}</strong>
-        <span>${p.category} — ${p.brand || 'GLOWTIME'}</span>
+  el.innerHTML = products.map(p => {
+    const status = p.status || (p.stockQty === 0 ? 'out' : p.stockQty <= 30 ? 'low' : 'ok');
+    const badgeCls  = status === 'out' ? 'badge-danger' : status === 'low' ? 'badge-warning' : 'badge-success';
+    const badgeText = status === 'out' ? 'Out of Stock' : `${p.stockQty} left`;
+    return `
+      <div class="low-stock-item">
+        <div class="low-stock-info">
+          <strong>${p.name}</strong>
+          <span>${p.category} — ${p.brand || 'GLOWTIME'}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <span class="status-badge ${badgeCls}">${badgeText}</span>
+        </div>
       </div>
-      <div style="display:flex; align-items:center; gap:0.6rem;">
-        <span class="status-badge ${p.stockQty === 0 ? 'badge-danger' : 'badge-warning'}">
-          ${p.stockQty === 0 ? 'Out of Stock' : `${p.stockQty} left`}
-        </span>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // ── Inspect Product Modal ─────────────────────────────────────
@@ -537,6 +540,90 @@ function _downloadCSV(rows, filename) {
   URL.revokeObjectURL(url);
 }
 
+// ── Update Category Chart with Real API Data ──────────────────
+const CATEGORY_PALETTE = ['#0A0A0A', '#C5A059', '#8B6F5E', '#4A6741', '#D4C4B7', '#A0856A', '#5C4A3D', '#B08968'];
+
+function updateCategoryChart(data) {
+  if (!_categoryChart || !data || !Array.isArray(data.labels) || data.labels.length === 0) return;
+  const values = Array.isArray(data.percentages) && data.percentages.length ? data.percentages : data.revenue;
+  _categoryChart.data.labels = data.labels;
+  _categoryChart.data.datasets[0].data = values;
+  _categoryChart.data.datasets[0].backgroundColor = data.labels.map((_, i) => CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]);
+  _categoryChart.update('active');
+}
+
+// ── Update Skin Type Chart with Real API Data ─────────────────
+function updateSkinChart(data) {
+  if (!_skinChart || !data || !Array.isArray(data.labels) || data.labels.length === 0) return;
+  _skinChart.data.labels = data.labels;
+  _skinChart.data.datasets[0].data = data.counts;
+  _skinChart.data.datasets[0].backgroundColor = data.labels.map((_, i) => `rgba(197,160,89,${Math.max(0.25, 0.85 - i * 0.15)})`);
+  _skinChart.update('active');
+}
+
+// ── Update Monthly Forecast Chart ──────────────────────────────
+// Actual: ข้อมูลจริงจาก GET /api/manager/reports/revenue?period=1Y
+// Forecast: คำนวณฝั่ง frontend เอง (ไม่มีทางดึงจาก DB เพราะเป็นเดือนอนาคต)
+// โดยใช้ growth rate เฉลี่ยแบบเดือนต่อเดือนจากข้อมูลจริง แล้ว project ต่อไปจนครบ 12 เดือน
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function _shortMonthLabel(ym) {
+  const parts = String(ym).split('-');
+  const idx = parseInt(parts[1], 10) - 1;
+  return MONTH_NAMES[idx] || String(ym);
+}
+
+function updateForecastChart(rawLabels, actualRevenue) {
+  if (!_forecastChart || !Array.isArray(rawLabels) || rawLabels.length === 0) return;
+
+  const actualLabels = rawLabels.map(_shortMonthLabel);
+
+  // Growth rate เฉลี่ยจากข้อมูลจริง (กันค่าสุดโต่งด้วยการ clamp -15% ถึง +25%)
+  let avgGrowth = 0.06;
+  const growthRates = [];
+  for (let i = 1; i < actualRevenue.length; i++) {
+    if (actualRevenue[i - 1] > 0) {
+      growthRates.push((actualRevenue[i] - actualRevenue[i - 1]) / actualRevenue[i - 1]);
+    }
+  }
+  if (growthRates.length > 0) {
+    avgGrowth = growthRates.reduce((a, b) => a + b, 0) / growthRates.length;
+    avgGrowth = Math.max(-0.15, Math.min(0.25, avgGrowth));
+  }
+
+  const forecastMonthsCount = Math.max(0, 12 - actualLabels.length);
+  const lastRaw = String(rawLabels[rawLabels.length - 1]);
+  let [lastYear, lastMonth] = lastRaw.split('-').map(Number);
+  lastYear = lastYear || new Date().getFullYear();
+  lastMonth = lastMonth || (new Date().getMonth() + 1);
+
+  const forecastLabels = [];
+  const forecastValues = [];
+  let lastValue = actualRevenue[actualRevenue.length - 1] || 0;
+
+  for (let i = 0; i < forecastMonthsCount; i++) {
+    lastMonth += 1;
+    if (lastMonth > 12) { lastMonth = 1; lastYear += 1; }
+    lastValue = Math.round(lastValue * (1 + avgGrowth));
+    forecastLabels.push(MONTH_NAMES[lastMonth - 1]);
+    forecastValues.push(lastValue);
+  }
+
+  const allLabels     = [...actualLabels, ...forecastLabels];
+  const actualSeries   = [...actualRevenue, ...new Array(forecastLabels.length).fill(null)];
+  const bridgeValue    = actualRevenue.length ? actualRevenue[actualRevenue.length - 1] : null;
+  const forecastSeries = [
+    ...new Array(Math.max(0, actualLabels.length - 1)).fill(null),
+    bridgeValue,
+    ...forecastValues,
+  ];
+
+  _forecastChart.data.labels = allLabels;
+  _forecastChart.data.datasets[0].data = actualSeries;
+  _forecastChart.data.datasets[1].data = forecastSeries;
+  _forecastChart.update('active');
+}
+
 // ── Load Dashboard from API (with fallback) ───────────────────
 async function loadDashboardFromAPI() {
   if (!window.GlowtimeAdminAPI) {
@@ -544,12 +631,28 @@ async function loadDashboardFromAPI() {
     return;
   }
 
-  // Run all requests in parallel
-  const [salesData, stockData, ordersData] = await Promise.allSettled([
+  // เรียก API พร้อมกัน (เฉพาะ manager endpoints)
+  const [salesData, stockData, categoryData, skinData, revenue1YData] = await Promise.allSettled([
     window.GlowtimeAdminAPI.Reports.getSales(),
     window.GlowtimeAdminAPI.Reports.getStock(),
-    window.GlowtimeAdminAPI.Orders.list(),
+    window.GlowtimeAdminAPI.Reports.getCategorySales(),
+    window.GlowtimeAdminAPI.Reports.getSkinTypes(),
+    window.GlowtimeAdminAPI.RevenueChart ? window.GlowtimeAdminAPI.RevenueChart.get('1Y') : Promise.resolve(null),
   ]);
+
+  // ── Category Chart (โดนัทชาร์ต) — ก่อนหน้านี้เป็น mock data ล้วน ─
+  const categoryReport = categoryData.status === 'fulfilled' ? categoryData.value : null;
+  if (categoryReport) updateCategoryChart(categoryReport);
+
+  // ── Skin Type Chart (บาร์ชาร์ต) — ก่อนหน้านี้เป็น mock data ล้วน ─
+  const skinReport = skinData.status === 'fulfilled' ? skinData.value : null;
+  if (skinReport) updateSkinChart(skinReport);
+
+  // ── Monthly Forecast Chart — Actual จาก API จริง, Forecast คำนวณฝั่ง frontend ─
+  const revenue1Y = revenue1YData.status === 'fulfilled' ? revenue1YData.value : null;
+  if (revenue1Y && Array.isArray(revenue1Y.labels) && revenue1Y.labels.length > 0) {
+    updateForecastChart(revenue1Y.labels, revenue1Y.revenue);
+  }
 
   // ── Sales Report ─────────────────────────────────────
   const sales = salesData.status === 'fulfilled' ? salesData.value : null;
@@ -561,8 +664,8 @@ async function loadDashboardFromAPI() {
 
     if (revEl) animateCounter(revEl, Number(sales.totalRevenue || 0), '฿');
     if (ordEl) animateCounter(ordEl, Number(sales.totalOrders || 0));
-    if (revMetaEl) revMetaEl.textContent = `Delivered: ${sales.deliveredCount || 0} | Shipping: ${sales.shippingCount || 0}`;
-    if (ordMetaEl) ordMetaEl.textContent = `Confirmed: ${sales.confirmedCount || 0}`;
+    if (revMetaEl) revMetaEl.textContent = '-'; //`Delivered: ${sales.deliveredCount || 0} | Shipping: ${sales.shippingCount || 0}`;
+    if (ordMetaEl) ordMetaEl.textContent = '-'; //`Confirmed: ${sales.confirmedCount || 0}`;
 
     // Top Products from API
     if (Array.isArray(sales.topProducts) && sales.topProducts.length > 0) {
@@ -591,8 +694,9 @@ async function loadDashboardFromAPI() {
     if (lowStockEl) animateCounter(lowStockEl, Number(stock.lowStockProducts || 0), '', ' Products');
     if (lowMetaEl) lowMetaEl.textContent = `Out of stock: ${stock.outOfStock || 0} items`;
 
-    const lowItems = (stock.products || []).filter(p => p.status === 'low' || p.status === 'out');
-    renderLowStockList(lowItems.length > 0 ? lowItems : MOCK_LOW_STOCK);
+    // แสดงสต็อกสินค้า "ทุกรายการ" เรียงจากน้อยไปมาก (backend ORDER BY stock_qty ASC ให้แล้ว)
+    const allStockItems = stock.products || [];
+    renderLowStockList(allStockItems.length > 0 ? allStockItems : MOCK_LOW_STOCK);
   } else {
     const lowStockEl = document.getElementById('statLowStock');
     const lowMetaEl  = document.getElementById('statLowStockMeta');
@@ -601,10 +705,10 @@ async function loadDashboardFromAPI() {
     renderLowStockList(MOCK_LOW_STOCK);
   }
 
-  // ── Recent Orders ─────────────────────────────────────
-  const orders = ordersData.status === 'fulfilled' ? ordersData.value : null;
-  if (Array.isArray(orders) && orders.length > 0) {
-    renderRecentOrders(orders);
+  // ── Recent Orders ───────────────────────────────────────────
+  // Manager ไม่มีสิทธิ์เรียก /api/staff/orders → ใช้ recentOrders จาก getSales() แทน
+  if (sales && Array.isArray(sales.recentOrders) && sales.recentOrders.length > 0) {
+    renderRecentOrders(sales.recentOrders);
   } else {
     renderRecentOrders(MOCK_RECENT_ORDERS);
   }
@@ -629,7 +733,7 @@ async function loadDashboardFromAPI() {
     const usersData = await window.GlowtimeAdminAPI.Users.list({ role: 'customer' });
     const count = Array.isArray(usersData) ? usersData.length : (usersData?.total || 1102);
     if (custEl) animateCounter(custEl, count);
-    if (custMetaEl) custMetaEl.textContent = `จากตาราง customers ใน DB`;
+    if (custMetaEl) custMetaEl.textContent = `-`;
   } catch {
     if (custEl) animateCounter(custEl, 1102);
     if (custMetaEl) custMetaEl.textContent = '▲ +18 members this week';
@@ -658,60 +762,16 @@ function _loadFallbackData() {
   renderLowStockList(MOCK_LOW_STOCK);
 }
 
-// ── DOM Load Trigger ──────────────────────────────────────────
+// ── DOM Load Trigger ────────────────────────────────────────────
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
+    if (!applyRoleGate(['manager'])) return; // ← เช็คสิทธิ์ก่อน
     initDashboardCharts();
     loadDashboardFromAPI();
   });
 } else {
-  initDashboardCharts();
-  loadDashboardFromAPI();
-}
-
-// ── Fetch Real Data from Backend (Reports API) ─────────────
-async function loadDashboardFromAPI() {
-  if (!window.GlowtimeAdminAPI) return;
-
-  try {
-    // 1. Sales Report
-    const salesData = await window.GlowtimeAdminAPI.Reports.getSales();
-    if (salesData) {
-      const revEl = document.getElementById('statTotalRevenue');
-      const ordEl = document.getElementById('statTotalOrders');
-      const revMetaEl = document.getElementById('statTotalRevenueMeta');
-
-      if (revEl) revEl.textContent = '฿' + Number(salesData.totalRevenue || 0).toLocaleString();
-      if (ordEl) ordEl.textContent = salesData.totalOrders || 0;
-      if (revMetaEl) revMetaEl.textContent = `Delivered: ${salesData.deliveredCount || 0} | Shipping: ${salesData.shippingCount || 0}`;
-    }
-
-    // 2. Stock Report
-    const stockData = await window.GlowtimeAdminAPI.Reports.getStock();
-    if (stockData) {
-      const lowStockEl = document.getElementById('statLowStock');
-      const stockListEl = document.getElementById('lowStockAlertList');
-
-      if (lowStockEl) lowStockEl.textContent = stockData.lowStockProducts || 0;
-
-      if (stockListEl && Array.isArray(stockData.products)) {
-        const lowItems = stockData.products.filter(p => p.status === 'low' || p.status === 'out');
-        if (lowItems.length > 0) {
-          stockListEl.innerHTML = lowItems.slice(0, 5).map(p => `
-            <div class="alert-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-bottom:1px solid var(--border);">
-              <div>
-                <strong style="font-size:0.82rem;">${p.name}</strong>
-                <div style="font-size:0.7rem; color:var(--gray);">${p.category} — ${p.brand}</div>
-              </div>
-              <span class="status-badge ${p.status === 'out' ? 'badge-danger' : 'badge-warning'}">
-                ${p.stockQty === 0 ? 'Out of Stock' : p.stockQty + ' left'}
-              </span>
-            </div>
-          `).join('');
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('[dashboard.js] ไม่สามารถโหลดข้อมูล reports จาก backend:', e.message);
+  if (applyRoleGate(['manager'])) { // ← เช็คสิทธิ์ก่อน
+    initDashboardCharts();
+    loadDashboardFromAPI();
   }
 }

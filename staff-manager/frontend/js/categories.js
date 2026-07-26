@@ -20,6 +20,7 @@ let categoriesList = [...MOCK_CATEGORIES];
 
 // ── Load on DOM Ready ─────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!applyRoleGate(['manager'])) return; // ← เช็คสิทธิ์ก่อน
   // Try fetching categories from backend
   if (window.GlowtimeAdminAPI) {
     try {

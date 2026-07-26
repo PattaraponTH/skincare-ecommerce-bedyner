@@ -347,7 +347,10 @@
   }
 
   // เรียกหลังจากโหลด scripts เสร็จ
-  window.addEventListener('load', loadProfileFromBackend);
+  window.addEventListener('load', () => {
+    if (!applyRoleGate(['manager'])) return; // ← เช็คสิทธิ์ก่อน
+    loadProfileFromBackend();
+  });
 </script>
 </body>
 </html>

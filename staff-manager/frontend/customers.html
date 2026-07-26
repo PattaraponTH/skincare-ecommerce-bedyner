@@ -238,5 +238,11 @@ function viewCustomer(id) {
 <script src="js/shared.js"></script>
 <script src="js/topbar.js"></script>
 <script src="js/sidebar.js"></script>
+<script>
+  // ── Role Gate: customers.html → เฉพาะ manager ──
+  document.addEventListener('DOMContentLoaded', () => {
+    applyRoleGate(['manager']); // ไม่มีสิทธิ์จะซ่อนเนื้อหาและแสดงการ์ด 🔒
+  });
+</script>
 </body>
 </html>

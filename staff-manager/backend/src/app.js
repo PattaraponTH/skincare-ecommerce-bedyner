@@ -1,3 +1,4 @@
+const path         = require('path');
 const express      = require('express');
 const cors         = require('cors');
 const swaggerUi    = require('swagger-ui-express');
@@ -29,6 +30,9 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// ── Static files: รูปสินค้าที่อัปโหลดจริงผ่าน /api/manager/products/upload-image ──
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ── Swagger UI ─────────────────────────────────────────────
 app.use(

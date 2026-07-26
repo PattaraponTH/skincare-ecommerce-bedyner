@@ -114,6 +114,10 @@ const createProduct = async (data) => {
     throw err;
   }
 
+  const ingredientsValue = Array.isArray(data.ingredients)
+    ? (data.ingredients.length ? data.ingredients.join(', ') : null)
+    : (data.ingredients || null);
+
   const [result] = await pool.query(
     `INSERT INTO products (brand_id, category_id, name, ingredients, price, stock_qty, expiry_date)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -121,12 +125,20 @@ const createProduct = async (data) => {
       brandRow.brand_id,
       catRow.category_id,
       name,
-      data.ingredients || null,
+      ingredientsValue,
       Number(price),
       Number(stockQty),
       data.expiryDate || null,
     ]
   );
+
+  // บันทึกรูปสินค้าลง product_images ถ้ามีการส่ง imageUrl มา
+  if (data.imageUrl) {
+    await pool.query(
+      'INSERT INTO product_images (product_id, image_url) VALUES (?, ?)',
+      [result.insertId, data.imageUrl]
+    );
+  }
 
   return getProductById(result.insertId);
 };
@@ -141,7 +153,13 @@ const updateProduct = async (id, data) => {
   const params     = [];
 
   if (data.name !== undefined)      { setClauses.push('name = ?');        params.push(data.name); }
-  if (data.ingredients !== undefined){ setClauses.push('ingredients = ?'); params.push(data.ingredients); }
+  if (data.ingredients !== undefined){
+    const ingredientsValue = Array.isArray(data.ingredients)
+      ? (data.ingredients.length ? data.ingredients.join(', ') : null)
+      : (data.ingredients || null);
+    setClauses.push('ingredients = ?');
+    params.push(ingredientsValue);
+  }
   if (data.price !== undefined)     { setClauses.push('price = ?');       params.push(Number(data.price)); }
   if (data.stockQty !== undefined)  { setClauses.push('stock_qty = ?');   params.push(Number(data.stockQty)); }
   if (data.expiryDate !== undefined){ setClauses.push('expiry_date = ?'); params.push(data.expiryDate); }
@@ -162,10 +180,29 @@ const updateProduct = async (id, data) => {
     params.push(catRow.category_id);
   }
 
-  if (setClauses.length === 0) return existing;
+  if (setClauses.length > 0) {
+    params.push(Number(id));
+    await pool.query(`UPDATE products SET ${setClauses.join(', ')} WHERE product_id = ?`, params);
+  }
 
-  params.push(Number(id));
-  await pool.query(`UPDATE products SET ${setClauses.join(', ')} WHERE product_id = ?`, params);
+  // บันทึกรูปสินค้าลง product_images ถ้ามีการส่ง imageUrl มา (upsert: มีอยู่แล้วก็อัปเดต ไม่มีก็เพิ่มใหม่)
+  if (data.imageUrl !== undefined) {
+    const [[existingImage]] = await pool.query(
+      'SELECT image_id FROM product_images WHERE product_id = ? LIMIT 1',
+      [Number(id)]
+    );
+    if (existingImage) {
+      await pool.query(
+        'UPDATE product_images SET image_url = ? WHERE image_id = ?',
+        [data.imageUrl, existingImage.image_id]
+      );
+    } else {
+      await pool.query(
+        'INSERT INTO product_images (product_id, image_url) VALUES (?, ?)',
+        [Number(id), data.imageUrl]
+      );
+    }
+  }
 
   return getProductById(id);
 };

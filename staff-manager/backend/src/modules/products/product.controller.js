@@ -1,6 +1,25 @@
 const productService = require('./product.service');
 
 /**
+ * POST /api/manager/products/upload-image
+ * รับไฟล์รูปจริง (multipart/form-data, field name "image") แล้วเก็บลง server
+ * คืนค่า imageUrl ที่เอาไปใส่ตอน create/update product ต่อได้เลย
+ */
+const uploadImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      const err = new Error('กรุณาแนบไฟล์รูปภาพ (field name: image)');
+      err.statusCode = 400;
+      throw err;
+    }
+    const imageUrl = `/uploads/products/${req.file.filename}`;
+    res.status(201).json({ success: true, data: { imageUrl } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * GET /api/manager/products
  */
 const getAllProducts = async (req, res, next) => {
@@ -61,4 +80,4 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct };
+module.exports = { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct, uploadImage };

@@ -134,4 +134,69 @@ router.get('/stock', verifyToken, requireRole('manager'), reportController.getSt
  */
 router.get('/revenue', verifyToken, requireRole('manager'), reportController.getRevenueChart);
 
+/**
+ * @openapi
+ * /api/manager/reports/category-sales:
+ *   get:
+ *     tags: [Reports]
+ *     summary: ยอดขายแยกตามหมวดหมู่สินค้า (Manager)
+ *     description: |
+ *       SUM(qty * unit_price) GROUP BY category จากตาราง categories + products + order_items
+ *       ใช้สำหรับ widget "Sales Revenue by Category" (โดนัทชาร์ต)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: ยอดขายแยกตามหมวดหมู่
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     labels:      { type: array, items: { type: string } }
+ *                     revenue:     { type: array, items: { type: number } }
+ *                     percentages: { type: array, items: { type: number } }
+ *       401:
+ *         description: ไม่มี Token
+ *       403:
+ *         description: ไม่มีสิทธิ์ (ต้องเป็น manager)
+ */
+router.get('/category-sales', verifyToken, requireRole('manager'), reportController.getCategorySales);
+
+/**
+ * @openapi
+ * /api/manager/reports/skin-types:
+ *   get:
+ *     tags: [Reports]
+ *     summary: สัดส่วนลูกค้าตามประเภทผิว (Manager)
+ *     description: |
+ *       COUNT(*) GROUP BY customers.skin_type
+ *       ใช้สำหรับ widget "Customer Skin Type Profiles" (บาร์ชาร์ต)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: สัดส่วนลูกค้าตามประเภทผิว
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     labels: { type: array, items: { type: string } }
+ *                     counts: { type: array, items: { type: integer } }
+ *       401:
+ *         description: ไม่มี Token
+ *       403:
+ *         description: ไม่มีสิทธิ์ (ต้องเป็น manager)
+ */
+router.get('/skin-types', verifyToken, requireRole('manager'), reportController.getSkinTypes);
+
 module.exports = router;

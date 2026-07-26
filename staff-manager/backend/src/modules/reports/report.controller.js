@@ -35,4 +35,34 @@ const getRevenueChart = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-module.exports = { getSalesReport, getStockReport, getRevenueChart };
+/**
+ * GET /api/manager/reports/category-sales
+ */
+const getCategorySales = async (_req, res, next) => {
+  try {
+    const data = await reportService.getCategorySales();
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/manager/reports/skin-types
+ */
+const getSkinTypes = async (_req, res, next) => {
+  try {
+    const data = await reportService.getSkinTypes();
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  getSalesReport,
+  getStockReport,
+  getRevenueChart,
+  getCategorySales,
+  getSkinTypes,
+};

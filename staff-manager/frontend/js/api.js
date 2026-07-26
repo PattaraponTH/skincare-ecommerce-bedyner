@@ -60,25 +60,19 @@ async function adminApiFetch(path, options = {}) {
 // ── Auth Module ──────────────────────────────────────────────
 const AdminAuth = {
   async login(email, password) {
-    try {
-      const res = await adminApiFetch('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.data?.token) {
-        setAdminToken(res.data.token);
-        if (res.data.user) localStorage.setItem('glowtime_user', JSON.stringify(res.data.user));
-      }
-      sessionStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminLoggedIn', 'true');
-      return res.data;
-    } catch (e) {
-      // Fallback สำหรับกรณีพัฒนา local/offline mock
-      sessionStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminLoggedIn', 'true');
-      return { success: true, message: 'LoggedIn Demo Mode' };
-    }
-  },
+  const res = await adminApiFetch('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  if (res.data?.token) {
+    setAdminToken(res.data.token);
+    if (res.data.user) localStorage.setItem('glowtime_user', JSON.stringify(res.data.user));
+  }
+  sessionStorage.setItem('adminLoggedIn', 'true');
+  localStorage.setItem('adminLoggedIn', 'true');
+  return res.data;
+  // ไม่มี try/catch แล้ว — ถ้า fetch fail หรือรหัสผิด ให้ error โยนขึ้นไปตามปกติ
+},
 
   logout() {
     clearAdminToken();
@@ -102,13 +96,16 @@ const AdminAuth = {
 // ── Admin Products Module ─────────────────────────────────────
 const AdminProducts = {
   async list(filters = {}) {
-    try {
-      const params = new URLSearchParams(filters).toString();
-      const res = await adminApiFetch(`/api/manager/products${params ? '?' + params : ''}`);
-      return res.data;
-    } catch {
-      return null; // fallback ให้หน้า UI ใช้ mock data เดิมถ้าไม่ได้เปิด backend
-    }
+    // หมายเหตุ: ไม่ fallback เป็น mock data อีกต่อไป — ถ้าเชื่อมต่อ backend/Railway MySQL
+    // ไม่ได้ ให้ error หลุดขึ้นไปให้ผู้เรียกใช้ (products.js) จัดการแสดงสถานะ "เชื่อมต่อไม่ได้" เอง
+    const params = new URLSearchParams(filters).toString();
+    const res = await adminApiFetch(`/api/manager/products${params ? '?' + params : ''}`);
+    return res.data;
+  },
+
+  async getById(id) {
+    const res = await adminApiFetch(`/api/manager/products/${id}`);
+    return res.data;
   },
 
   async create(productData) {
@@ -130,6 +127,27 @@ const AdminProducts = {
   async delete(id) {
     const res = await adminApiFetch(`/api/manager/products/${id}`, { method: 'DELETE' });
     return res.data;
+  },
+
+  // อัปโหลดไฟล์รูปจริงขึ้น server (multipart/form-data — ห้ามตั้ง Content-Type: application/json
+  // เหมือน adminApiFetch ทั่วไป ไม่งั้น browser จะไม่ใส่ boundary ให้ ต้องยิง fetch ตรงเอง)
+  async uploadImage(file) {
+    const token = getAdminToken();
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const res = await fetch(`${ADMIN_API_BASE}/api/manager/products/upload-image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const err = new Error(data.message || 'อัปโหลดรูปไม่สำเร็จ');
+      err.status = res.status;
+      throw err;
+    }
+    return data.data; // { imageUrl }
   },
 
   async updateStock(productId, stockQty) {
@@ -189,6 +207,24 @@ const AdminReports = {
       return null;
     }
   },
+
+  async getCategorySales() {
+    try {
+      const res = await adminApiFetch('/api/manager/reports/category-sales');
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async getSkinTypes() {
+    try {
+      const res = await adminApiFetch('/api/manager/reports/skin-types');
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
 };
 
 // ── Admin Users Module ────────────────────────────────────────
@@ -197,6 +233,15 @@ const AdminUsers = {
     try {
       const params = new URLSearchParams(filters).toString();
       const res = await adminApiFetch(`/api/manager/users${params ? '?' + params : ''}`);
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async getById(id) {
+    try {
+      const res = await adminApiFetch(`/api/manager/users/${id}`);
       return res.data;
     } catch {
       return null;
@@ -427,4 +472,5 @@ window.GlowtimeAdminAPI = {
   RevenueChart: AdminRevenueChart,// ← ใหม่
   getAdminToken,
   getAdminUser,
+  apiBase: ADMIN_API_BASE,
 };

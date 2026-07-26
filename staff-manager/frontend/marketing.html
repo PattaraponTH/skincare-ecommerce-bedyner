@@ -1,80 +1,167 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Promotions &amp; Bundles — GLOWTIME Staff &amp; Admin</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <meta name="description" content="GLOWTIME Admin — จัดการ Bundle Sets, Flash Sales และ Cart Recovery"/>
   <script>if(localStorage.getItem('adminLoggedIn')==='true'||sessionStorage.getItem('adminLoggedIn')==='true')document.documentElement.classList.add('admin-logged-in');</script>
   <link rel="stylesheet" href="css/admin.css"/>
 </head>
 <body>
 
-<!-- ── AUTH LOCK OVERLAY ── -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card">
-    <span class="auth-badge">GLOWTIME · Staff & Manager Portal</span>
+    <span class="auth-badge">GLOWTIME · Admin Protection</span>
     <h2 class="auth-title">Admin Authentication</h2>
-    <p class="auth-desc">Please sign in with Manager account</p>
+    <p class="auth-desc">กรุณาลงชื่อเข้าใช้เพื่อเข้าสู่ระบบ</p>
     <form onsubmit="handleAdminLogin(event)">
       <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="adminUser" class="form-control" value="manager01@gmail.com" required placeholder="manager01@gmail.com">
+        <label>Username / Email</label>
+        <input type="text" id="adminUser" class="form-control" value="admin" required>
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="adminPass" class="form-control" value="123456" required>
+        <input type="password" id="adminPass" class="form-control" value="password123" required>
       </div>
       <button type="submit" class="btn-submit">Sign In to Dashboard</button>
     </form>
   </div>
 </div>
 
-<!-- ── MAIN LAYOUT ── -->
 <div class="admin-container">
-
   <aside class="sidebar" id="sidebar"></aside>
 
   <main class="main-content">
-    <header class="topbar" data-title="Promotions &amp; Bundles" data-sub="Bundle sets, flash sale campaigns, and cart recovery alerts"></header>
+    <header class="topbar"
+      data-title="Promotions &amp; Bundles"
+      data-sub="Bundle sets, flash sale campaigns, and cart recovery">
+    </header>
 
-    <!-- BUNDLE SETS -->
+    <!-- STAT CARDS -->
+    <div class="stats-grid" id="marketingStats" style="margin-bottom:2rem;"></div>
+
+    <!-- BUNDLE SETS TABLE -->
     <div class="content-card">
       <div class="card-header">
-        <h3 class="card-title">Promotions & Campaigns</h3>
-        <button class="btn-dark-sm" onclick="showToast('Opening Create Promotion form...')">+ Create Promotion</button>
+        <div>
+          <h3 class="card-title">Bundle Sets</h3>
+          <p style="font-size:0.75rem; color:var(--gray); margin-top:0.2rem;">ชุดสินค้าราคาพิเศษ</p>
+        </div>
+        <button class="btn-dark-sm" onclick="openCreateBundleModal()">+ Create Bundle</button>
       </div>
-
       <div class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Type</th>
-              <th>Discount</th>
-              <th>Period</th>
+              <th>Bundle Name</th>
+              <th>Regular Price</th>
+              <th>Bundle Price</th>
+              <th>Sold</th>
+              <th>End Date</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
-          <tbody id="promotionsTbody">
-            <tr><td colspan="5" style="text-align:center; color:var(--gray); padding:1.5rem;">กำลังโหลดข้อมูล...</td></tr>
+          <tbody id="bundlesTableBody">
+            <tr><td colspan="7"><div class="skeleton-row"></div></td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- CART RECOVERY TRIGGER -->
-    <div class="content-card">
-      <div class="card-header">
-        <h3 class="card-title">Cart Recovery Trigger</h3>
-        <button class="btn-dark-sm" onclick="showToast('Push alert sent to 14 customers with abandoned carts!')">Send Push Alert</button>
+    <!-- FLASH SALES + CART RECOVERY (2 columns) -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+
+      <!-- FLASH SALES -->
+      <div class="content-card" style="margin-bottom:0;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">⚡ Flash Sales</h3>
+            <p style="font-size:0.75rem; color:var(--status-danger); margin-top:0.2rem;">Live countdown timers</p>
+          </div>
+          <button class="btn-dark-sm" onclick="showToast('Flash sale creation coming soon!')">+ New Flash</button>
+        </div>
+        <div id="flashSaleList"></div>
       </div>
-      <p style="font-size:0.85rem; color:#777; padding: 0 0 0.5rem;">
-        <strong>14 customers</strong> have had items in their cart for over 2 hours (total pending value: <strong>฿18,200</strong>)
-      </p>
+
+      <!-- CART RECOVERY -->
+      <div class="content-card" style="margin-bottom:0;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">🛒 Cart Recovery</h3>
+            <p style="font-size:0.75rem; color:var(--status-danger); margin-top:0.2rem;">Abandoned carts needing attention</p>
+          </div>
+          <button class="btn-dark-sm" onclick="sendCartRecoveryAll()">📧 Send All</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Cart Items</th>
+                <th>Value</th>
+                <th>Since</th>
+                <th>Recover</th>
+              </tr>
+            </thead>
+            <tbody id="cartRecoveryBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
   </main>
+</div>
+
+<!-- MODAL: Bundle Form -->
+<div class="modal-backdrop" id="modalBundle">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="bundleModalTitle">Create Bundle Set</h3>
+      <button class="modal-close" type="button" onclick="closeModal('modalBundle')">✕</button>
+    </div>
+    <form onsubmit="saveBundle(event)" id="bundleForm">
+      <input type="hidden" id="editBundleId">
+
+      <div class="form-group">
+        <label>Bundle Name <span style="color:var(--status-danger);">*</span></label>
+        <input type="text" id="bundleName" class="form-control" required placeholder="e.g. Calming Duo Set">
+      </div>
+      <div class="form-group">
+        <label>Products (comma-separated) <span style="color:var(--status-danger);">*</span></label>
+        <input type="text" id="bundleProducts" class="form-control" required placeholder="Hydrating Serum, Rose Barrier Cream">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem;">
+        <div class="form-group">
+          <label>Regular Price (฿)</label>
+          <input type="number" id="bundleRegularPrice" class="form-control" min="0" placeholder="1280">
+        </div>
+        <div class="form-group">
+          <label>Bundle Sale Price (฿)</label>
+          <input type="number" id="bundleSalePrice" class="form-control" min="0" placeholder="990">
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem;">
+        <div class="form-group">
+          <label>End Date</label>
+          <input type="date" id="bundleEndDate" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="bundleStatus" class="form-control">
+            <option value="Active">Active</option>
+            <option value="Hidden">Hidden</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.6rem; margin-top:1.2rem;">
+        <button type="button" class="btn-ghost-sm" onclick="closeModal('modalBundle')">Cancel</button>
+        <button type="submit" class="btn-dark-sm">Save Bundle</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
@@ -83,26 +170,6 @@
 <script src="js/shared.js"></script>
 <script src="js/topbar.js"></script>
 <script src="js/sidebar.js"></script>
-<script>
-async function loadPromotions() {
-  if (!window.GlowtimeAdminAPI) return;
-  try {
-    const promos = await window.GlowtimeAdminAPI.Marketing.list();
-    const tbody = document.getElementById('promotionsTbody');
-    if (!tbody || !Array.isArray(promos) || promos.length === 0) return;
-    tbody.innerHTML = promos.map(p => `
-      <tr>
-        <td><strong>${p.title}</strong><br><span style="font-size:0.72rem;color:var(--gray);">${p.description || ''}</span></td>
-        <td><span class="status-badge badge-info">${p.type || '-'}</span></td>
-        <td>${p.discount ? p.discount + '%' : '-'}</td>
-        <td style="font-size:0.78rem;">${p.startDate || '-'} → ${p.endDate || '-'}</td>
-        <td><span class="status-badge badge-${
-          p.status === 'Active' ? 'success' : p.status === 'Scheduled' ? 'warning' : 'danger'
-        }">${p.status}</span></td>
-      </tr>`);
-  } catch (e) { console.warn('[marketing] load error:', e.message); }
-}
-document.addEventListener('DOMContentLoaded', loadPromotions);
-</script>
+<script src="js/marketing.js"></script>
 </body>
 </html>

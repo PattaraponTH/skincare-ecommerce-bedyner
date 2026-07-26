@@ -1,36 +1,128 @@
-function resolveProductImg(rawImg) {
-  if (!rawImg || typeof rawImg !== 'string' || !rawImg.includes('.')) {
-    return 'images/products/hydrating-serum.jpg';
+// ── State ──────────────────────────────────────────────────────
+// หมายเหตุ: ไม่มี mock data ฮาร์ดโค้ดอีกต่อไป — ทั้ง productsList และ categoriesList
+// ต้องโหลดจาก backend (Railway MySQL) เท่านั้น ถ้าเชื่อมต่อไม่ได้ หน้าจะโชว์สถานะว่างเปล่า
+// พร้อมข้อความแจ้งเตือน แทนการ fallback ไปแสดงข้อมูลม็อกเหมือนของจริง
+let productsList  = [];
+let categoriesList = [];
+
+// รายชื่อรูป placeholder ที่มีไฟล์จริงอยู่ใน images/products/ (ชุดเดียวกับที่ customer/frontend/api.js ใช้)
+const KNOWN_IMAGES = ['hydrating-serum', 'renewal-cream', 'radiance-oil', 'gentle-cleanser',
+                      'hydrating-mist', 'glow-mask', 'daily-spf-50', 'niacinamide-10', 'rose-barrier-cream'];
+const CATEGORY_IMAGE = {
+  serum: 'hydrating-serum', toner: 'hydrating-mist', moisturizer: 'renewal-cream',
+  cleanser: 'gentle-cleanser', sunscreen: 'daily-spf-50', oil: 'radiance-oil',
+  mist: 'hydrating-mist', mask: 'glow-mask', cream: 'renewal-cream', 'eye cream': 'renewal-cream',
+};
+
+function resolveProductImg(imageUrl, product = {}) {
+  const DEFAULT_IMG = 'images/products/hydrating-serum.jpg';
+
+  // ไฟล์ที่อัปโหลดจริงผ่าน POST /api/manager/products/upload-image จะขึ้นต้นด้วย /uploads/
+  // ต้องต่อกับ origin ของ backend เอง (ไม่ใช่ origin ของหน้า frontend ที่อาจรันคนละพอร์ต/โดเมน)
+  if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('/uploads/')) {
+    const base = (window.GlowtimeAdminAPI && window.GlowtimeAdminAPI.apiBase) || '';
+    return `${base}${imageUrl}`;
   }
-  const filename = rawImg.split('/').pop();
-  return `images/products/${filename}`;
+
+  // รองรับ URL เต็มอยู่แล้ว
+  if (imageUrl && typeof imageUrl === 'string' && /^https?:\/\//i.test(imageUrl)) return imageUrl;
+
+  // ชื่อไฟล์เดี่ยวๆ จาก seed data เดิม (glowtime.sql เช่น "anua1.jpg") ที่ไม่มีไฟล์จริงในระบบ
+  // → แมพไปหา placeholder ที่มีไฟล์จริงตามชื่อสินค้า/หมวดหมู่แทน (เหมือนวิธีที่ customer/frontend/api.js ใช้)
+  const slug = String(product.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  let pick = null;
+  if (KNOWN_IMAGES.includes(slug)) pick = slug;
+  else if (slug.includes('niacinamide')) pick = 'niacinamide-10';
+  else pick = CATEGORY_IMAGE[String(product.category || '').toLowerCase()] || null;
+
+  return pick ? `images/products/${pick}.jpg` : DEFAULT_IMG;
 }
 
-let productsList = [
-  { id: 1001, name: "Hydrating Serum 30ml", brand: "GLOWTIME", category: "Serum", skinTypeTarget: ["dry", "sensitive", "normal"], ingredients: ["Hyaluronic Acid", "Vitamin B5", "Ceramide"], description: "เซรั่มเติมน้ำเข้มข้น ด้วย Hyaluronic Acid 3 โมเลกุล ช่วยกักเก็บความชุ่มชื้นลึกถึงชั้นผิว", price: 590.00, stockQty: 120, expiryDate: "2028-06-30", images: ["images/products/hydrating-serum.jpg"] },
-  { id: 1002, name: "Renewal Cream 50g", brand: "GLOWTIME", category: "Moisturizer", skinTypeTarget: ["dry", "normal"], ingredients: ["Peptide Complex", "Squalane", "Shea Butter"], description: "ครีมฟื้นบำรุงผิวยามค่ำคืน ช่วยให้ผิวดูเรียบเนียน กระชับ", price: 890.00, stockQty: 80, expiryDate: "2028-03-31", images: ["images/products/renewal-cream.jpg"] },
-  { id: 1003, name: "Radiance Oil 30ml", brand: "GLOWTIME", category: "Oil", skinTypeTarget: ["dry", "normal"], ingredients: ["Rosehip Oil", "Jojoba Oil", "Vitamin E"], description: "เฟซออยล์บำรุงผิวให้เปล่งประกาย ด้วยน้ำมันโรสฮิปสกัดเย็น", price: 750.00, stockQty: 60, expiryDate: "2027-12-31", images: ["images/products/radiance-oil.jpg"] },
-  { id: 1004, name: "Gentle Cleanser 150ml", brand: "GLOWTIME", category: "Cleanser", skinTypeTarget: ["all"], ingredients: ["Amino Acid Surfactant", "Glycerin", "Chamomile Extract"], description: "เจลล้างหน้าสูตรอ่อนโยน pH สมดุล ทำความสะอาดหมดจดโดยไม่ทำให้ผิวแห้งตึง", price: 390.00, stockQty: 200, expiryDate: "2028-09-30", images: ["images/products/gentle-cleanser.jpg"] },
-  { id: 1005, name: "Hydrating Mist 100ml", brand: "GLOWTIME", category: "Mist", skinTypeTarget: ["all"], ingredients: ["Rose Water", "Hyaluronic Acid", "Aloe Vera"], description: "สเปรย์น้ำแร่ผสมน้ำกุหลาบ ฉีดเติมความสดชื่นระหว่างวัน", price: 320.00, stockQty: 150, expiryDate: "2028-01-31", images: ["images/products/hydrating-mist.jpg"] },
-  { id: 1006, name: "Glow Mask 100g", brand: "GLOWTIME", category: "Mask", skinTypeTarget: ["combination", "oily", "normal"], ingredients: ["Kaolin Clay", "Vitamin C", "Honey Extract"], description: "มาส์กโคลนผสมวิตามินซี ช่วยดูดซับความมันส่วนเกิน", price: 450.00, stockQty: 90, expiryDate: "2027-10-31", images: ["images/products/glow-mask.jpg"] },
-  { id: 1007, name: "Daily SPF 50+ Sunscreen 50ml", brand: "GLOWTIME", category: "Sunscreen", skinTypeTarget: ["all"], ingredients: ["Zinc Oxide", "Niacinamide", "Centella Extract"], description: "กันแดดเนื้อบางเบา SPF50+ PA++++ ไม่ทิ้งคราบขาว ผสม Niacinamide", price: 490.00, stockQty: 5, expiryDate: "2028-05-31", images: ["images/products/daily-spf-50.jpg"] },
-  { id: 1008, name: "Niacinamide 10% Serum 30ml", brand: "GLOWTIME", category: "Serum", skinTypeTarget: ["oily", "combination"], ingredients: ["Niacinamide 10%", "Zinc PCA"], description: "เซรั่มไนอาซินาไมด์เข้มข้น 10% ช่วยลดเลือนรูขุมขน ควบคุมความมัน", price: 550.00, stockQty: 110, expiryDate: "2028-04-30", images: ["images/products/niacinamide-10.jpg"] },
-  { id: 1009, name: "Rose Barrier Cream 50g", brand: "GLOWTIME", category: "Moisturizer", skinTypeTarget: ["sensitive", "dry"], ingredients: ["Rose Extract", "Ceramide NP"], description: "ครีมเสริมเกราะป้องกันผิว กลิ่นกุหลาบอ่อนๆ ด้วย Ceramide", price: 690.00, stockQty: 70, expiryDate: "2028-02-29", images: ["images/products/rose-barrier-cream.jpg"] }
-];
+function showStatusBanner(message) {
+  const banner = document.getElementById('productsStatusBanner');
+  if (!banner) return;
+  banner.textContent = message;
+  banner.style.display = 'block';
+}
+
+function hideStatusBanner() {
+  const banner = document.getElementById('productsStatusBanner');
+  if (!banner) return;
+  banner.style.display = 'none';
+  banner.textContent = '';
+}
+
+// ── Load categories จริงจาก DB (ไม่ฮาร์ดโค้ดชื่อ category อีกต่อไป) ──
+async function loadCategories() {
+  try {
+    const apiCategories = window.GlowtimeAdminAPI
+      ? await window.GlowtimeAdminAPI.Categories.list()
+      : null;
+    categoriesList = Array.isArray(apiCategories) ? apiCategories : [];
+  } catch (e) {
+    console.warn('[products.js] โหลด categories จาก backend ไม่สำเร็จ:', e.message);
+    categoriesList = [];
+  }
+  renderCategorySelectOptions();
+}
+
+// ── Load รายการสินค้าจริงจาก DB ──
+async function loadProducts() {
+  try {
+    if (!window.GlowtimeAdminAPI) throw new Error('ไม่พบ GlowtimeAdminAPI');
+    const apiProducts = await window.GlowtimeAdminAPI.Products.list();
+    productsList = Array.isArray(apiProducts) ? apiProducts : [];
+    hideStatusBanner();
+  } catch (e) {
+    console.warn('[products.js] โหลดสินค้าจาก backend ไม่สำเร็จ:', e.message);
+    productsList = [];
+    showStatusBanner('⚠ ไม่สามารถเชื่อมต่อ backend (Railway MySQL) ได้ในขณะนี้ — ไม่มีข้อมูลสินค้าให้แสดง กรุณาตรวจสอบว่าเซิร์ฟเวอร์เปิดใช้งานอยู่ แล้วรีเฟรชหน้านี้ใหม่');
+  }
+  renderCategoryTabs();
+  renderProductTable(productsList);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (window.GlowtimeAdminAPI) {
-    try {
-      const apiProducts = await window.GlowtimeAdminAPI.Products.list();
-      if (apiProducts && apiProducts.length > 0) {
-        productsList = apiProducts;
-      }
-    } catch (e) {
-      console.warn('[products.js] ใช้ mock data เนื่องจาก backend ไม่ตอบสนอง:', e.message);
-    }
-  }
-  renderProductTable(productsList);
+  if (!applyRoleGate(['manager'])) return; // ← เช็คสิทธิ์ก่อน
+  await loadCategories();
+  await loadProducts();
 });
+
+// ── แท็บ filter แบบ dynamic ตาม categories จริงใน DB (แก้ปัญหา "ไม่มีแท็บ Toner" /
+//    "กด Serum แล้วชื่อไม่ตรงกับที่แก้ในตาราง categories") ──
+function renderCategoryTabs() {
+  const row = document.getElementById('categoryFilterRow');
+  if (!row) return;
+
+  const escAttr = (s) => String(s).replace(/'/g, "\\'");
+
+  const allBtn = `<button class="btn-dark-sm" onclick="filterProducts('all')">All Products (${productsList.length})</button>`;
+
+  const catBtns = categoriesList
+    .map(c => `<button class="btn-ghost-sm" onclick="filterProducts('${escAttr(c.name)}')">${c.name}</button>`)
+    .join('');
+
+  const lowStockBtn = `<button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="filterProducts('low_stock')">Low Stock (&lt;10)</button>`;
+
+  row.innerHTML = allBtn + catBtns + lowStockBtn;
+}
+
+// ── option ในฟอร์ม Add/Edit แบบ dynamic ตาม categories จริงใน DB ──
+function renderCategorySelectOptions(selectedValue) {
+  const select = document.getElementById('newProdCat');
+  if (!select) return;
+
+  if (categoriesList.length === 0) {
+    select.innerHTML = `<option value="" disabled selected>ไม่พบหมวดหมู่ (เชื่อมต่อ backend ไม่ได้)</option>`;
+    return;
+  }
+
+  select.innerHTML = categoriesList
+    .map(c => `<option value="${c.name}">${c.name}</option>`)
+    .join('');
+
+  if (selectedValue) select.value = selectedValue;
+}
 
 function openImageLightbox(imgSrc, title, category, price) {
   let modal = document.getElementById('imageLightboxModal');
@@ -71,10 +163,13 @@ function renderProductTable(items) {
   const tbody = document.getElementById('productTableBody');
   if (!tbody) return;
 
+  if (!items || items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2.5rem; color:var(--gray);">ไม่พบสินค้า</td></tr>`;
+    return;
+  }
+
   tbody.innerHTML = items.map(p => {
-    const rawImg = (p.images && p.images[0]) ? p.images[0] : '';
-    const imgUrl = resolveProductImg(rawImg);
-    const fallbackUrl = `/customer/frontend/images/products/${rawImg.split('/').pop() || 'hydrating-serum.jpg'}`;
+    const imgUrl = resolveProductImg(p.imageUrl, p);
     const safeTitle = (p.name || '').replace(/'/g, "\\'");
 
     return `
@@ -82,7 +177,7 @@ function renderProductTable(items) {
       <td><strong>#${p.id}</strong></td>
       <td>
         <div class="product-thumb" onclick="openImageLightbox('${imgUrl}', '${safeTitle}', '${p.category}', '฿${Number(p.price).toLocaleString()}')" title="Click to view image preview">
-          <img src="${imgUrl}" alt="${p.name}" loading="lazy" onerror="this.onerror=null; this.src='${fallbackUrl}';"/>
+          <img src="${imgUrl}" alt="${p.name}" loading="lazy" onerror="this.onerror=null; this.src='images/products/hydrating-serum.jpg';"/>
         </div>
       </td>
       <td>
@@ -92,8 +187,8 @@ function renderProductTable(items) {
       <td><span class="status-badge badge-info">${p.category}</span></td>
       <td><strong>฿${Number(p.price).toLocaleString()}</strong></td>
       <td>
-        ${p.stockQty < 10 
-          ? `<strong style="color:var(--status-danger);">${p.stockQty} units (Low)</strong>` 
+        ${p.stockQty < 10
+          ? `<strong style="color:var(--status-danger);">${p.stockQty} units (Low)</strong>`
           : `<span>${p.stockQty} units</span>`}
       </td>
       <td><span style="font-size:0.75rem; color:var(--gray);">${p.expiryDate || '-'}</span></td>
@@ -114,12 +209,13 @@ function filterProducts(cat) {
 async function saveNewProduct(e) {
   e.preventDefault();
 
+  if (!window.GlowtimeAdminAPI) {
+    showToast('ไม่สามารถเชื่อมต่อ backend ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
+    return;
+  }
+
   const fileInput = document.getElementById('newProdImageFile');
   const file = fileInput && fileInput.files[0];
-
-  // Use a local object URL if an image was uploaded, otherwise use a placeholder
-  const localImageUrl = file ? URL.createObjectURL(file) : 'images/products/hydrating-serum.jpg';
-  const fileName = file ? file.name : 'hydrating-serum.jpg';
 
   const ingredientsRaw = document.getElementById('newProdIngredients').value;
   const ingredients = ingredientsRaw
@@ -129,70 +225,51 @@ async function saveNewProduct(e) {
   const editId = document.getElementById('editProdId').value;
   const isEdit = !!editId;
 
-  const prodData = {
-    name: document.getElementById('newProdName').value.trim(),
-    brand: document.getElementById('newProdBrand').value.trim() || 'GLOWTIME',
-    category: document.getElementById('newProdCat').value,
-    ingredients,
-    description: document.getElementById('newProdDesc').value.trim(),
-    price: Number(document.getElementById('newProdPrice').value),
-    stockQty: Number(document.getElementById('newProdStock').value),
-    expiryDate: document.getElementById('newProdExpiry').value,
-    images: file ? [localImageUrl] : undefined,
-  };
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
 
-  if (isEdit) {
-    // ── UPDATE (PUT) ──
-    try {
-      if (window.GlowtimeAdminAPI) {
-        const updated = await window.GlowtimeAdminAPI.Products.update(editId, prodData);
-        if (updated) {
-          const idx = productsList.findIndex(p => p.id === Number(editId));
-          if (idx !== -1) productsList[idx] = { ...productsList[idx], ...updated };
-        } else {
-          throw new Error('no api response');
-        }
-      } else {
-        throw new Error('no api');
-      }
-    } catch {
-      // fallback: update local only
+  try {
+    // 1) อัปโหลดไฟล์รูปจริงขึ้น server ก่อน (ถ้ามีการเลือกไฟล์ใหม่) — ได้ imageUrl จริงกลับมา
+    let imageUrl;
+    if (file) {
+      const uploaded = await window.GlowtimeAdminAPI.Products.uploadImage(file);
+      imageUrl = uploaded && uploaded.imageUrl;
+    }
+
+    const prodData = {
+      name: document.getElementById('newProdName').value.trim(),
+      brand: document.getElementById('newProdBrand').value.trim() || 'GLOWTIME',
+      category: document.getElementById('newProdCat').value,
+      ingredients,
+      description: document.getElementById('newProdDesc').value.trim(),
+      price: Number(document.getElementById('newProdPrice').value),
+      stockQty: Number(document.getElementById('newProdStock').value),
+      expiryDate: document.getElementById('newProdExpiry').value,
+      ...(imageUrl ? { imageUrl } : {}),
+    };
+
+    if (isEdit) {
+      const updated = await window.GlowtimeAdminAPI.Products.update(editId, prodData);
       const idx = productsList.findIndex(p => p.id === Number(editId));
-      if (idx !== -1) {
-        const merged = { ...productsList[idx], ...prodData, id: Number(editId) };
-        if (file) { merged.images = [localImageUrl]; merged._localImage = localImageUrl; }
-        productsList[idx] = merged;
-      }
+      if (idx !== -1) productsList[idx] = updated;
+    } else {
+      const created = await window.GlowtimeAdminAPI.Products.create(prodData);
+      productsList.unshift(created);
     }
-  } else {
-    // ── CREATE (POST) ──
-    try {
-      if (window.GlowtimeAdminAPI) {
-        const created = await window.GlowtimeAdminAPI.Products.create(prodData);
-        if (created) {
-          productsList.unshift(created);
-        } else {
-          throw new Error('no api response');
-        }
-      } else {
-        throw new Error('no api');
-      }
-    } catch {
-      // fallback: add local only
-      const localItem = {
-        ...prodData,
-        id: Math.max(...productsList.map(p => p.id), 1000) + 1,
-        images: [localImageUrl],
-        _localImage: localImageUrl,
-      };
-      productsList.unshift(localItem);
-    }
-  }
 
-  renderProductTable(productsList);
-  closeModal('modalAddProduct');
-  resetAddProductForm();
-  showToast(`"${prodData.name}" ${isEdit ? 'updated' : 'added'} successfully!`);
+    renderCategoryTabs();
+    renderProductTable(productsList);
+    closeModal('modalAddProduct');
+    resetAddProductForm();
+    showToast(`"${prodData.name}" ${isEdit ? 'updated' : 'added'} successfully!`);
+  } catch (err) {
+    // ไม่ fallback เป็นการบันทึกลงเครื่องแบบเงียบๆ อีกต่อไป — ถ้า backend/Railway MySQL
+    // เชื่อมต่อไม่ได้ ต้องแจ้งผู้ใช้ตรงๆ ว่าบันทึกไม่สำเร็จ ไม่ใช่ทำเหมือนสำเร็จทั้งที่ไม่ได้เก็บลง DB จริง
+    console.warn('[products.js] saveNewProduct ล้มเหลว:', err.message);
+    showToast(`บันทึกไม่สำเร็จ — เชื่อมต่อ backend (Railway MySQL) ไม่ได้: ${err.message}`);
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save Product'; }
+  }
 }
 
 function previewProductImage(input) {
@@ -230,45 +307,67 @@ function openAddProductModal() {
   resetAddProductForm();
   document.getElementById('productModalTitle').innerText = 'Add New Product';
   document.getElementById('editProdId').value = '';
+  renderCategorySelectOptions();
   openModal('modalAddProduct');
 }
 
 async function deleteProductRow(id) {
-  if (confirm(`Are you sure you want to delete product #${id} from the catalog?`)) {
-    try {
-      if (window.GlowtimeAdminAPI) {
-        await window.GlowtimeAdminAPI.Products.delete(id);
-      }
-    } catch (e) {
-      console.warn('[products.js] deleteProductRow backend error:', e.message);
-    }
+  if (!confirm(`Are you sure you want to delete product #${id} from the catalog?`)) return;
+
+  if (!window.GlowtimeAdminAPI) {
+    showToast('ไม่สามารถเชื่อมต่อ backend ได้ในขณะนี้');
+    return;
+  }
+
+  try {
+    await window.GlowtimeAdminAPI.Products.delete(id);
     productsList = productsList.filter(p => p.id !== id);
+    renderCategoryTabs();
     renderProductTable(productsList);
     showToast(`Deleted product #${id} successfully`);
+  } catch (err) {
+    console.warn('[products.js] deleteProductRow ล้มเหลว:', err.message);
+    showToast(`ลบไม่สำเร็จ — เชื่อมต่อ backend (Railway MySQL) ไม่ได้: ${err.message}`);
   }
 }
 
-function editProduct(id) {
-  const product = productsList.find(p => p.id === id);
-  if (!product) return;
+// ── เชื่อมกับ GET /api/manager/products/:id จริง แทนการอ่านจาก productsList ในเครื่องอย่างเดียว ──
+async function editProduct(id) {
+  let product = productsList.find(p => p.id === id);
+
+  if (window.GlowtimeAdminAPI) {
+    try {
+      const fresh = await window.GlowtimeAdminAPI.Products.getById(id);
+      if (fresh) {
+        product = fresh;
+        const idx = productsList.findIndex(p => p.id === id);
+        if (idx !== -1) productsList[idx] = fresh; else productsList.push(fresh);
+      }
+    } catch (e) {
+      console.warn('[products.js] ดึงข้อมูลล่าสุดจาก GET /api/manager/products/:id ไม่สำเร็จ ใช้ข้อมูลที่มีอยู่ในเครื่องแทน:', e.message);
+    }
+  }
+
+  if (!product) {
+    showToast('ไม่พบสินค้านี้ (เชื่อมต่อ backend ไม่ได้ และไม่มีข้อมูลในเครื่อง)');
+    return;
+  }
 
   resetAddProductForm();
-  
+
   document.getElementById('productModalTitle').innerText = 'Edit Product #' + id;
   document.getElementById('editProdId').value = id;
-  
+
   document.getElementById('newProdName').value = product.name || '';
   document.getElementById('newProdBrand').value = product.brand || '';
-  document.getElementById('newProdCat').value = product.category || 'Serum';
+  renderCategorySelectOptions(product.category || '');
   document.getElementById('newProdPrice').value = product.price || 0;
   document.getElementById('newProdStock').value = product.stockQty || 0;
-  document.getElementById('newProdExpiry').value = product.expiryDate || '';
+  document.getElementById('newProdExpiry').value = product.expiryDate ? String(product.expiryDate).slice(0, 10) : '';
   document.getElementById('newProdIngredients').value = Array.isArray(product.ingredients) ? product.ingredients.join(', ') : (product.ingredients || '');
   document.getElementById('newProdDesc').value = product.description || '';
 
-  const rawImg = (product.images && product.images[0]) ? product.images[0] : '';
-  const imgUrl = product._localImage || resolveProductImg(rawImg);
-  
+  const imgUrl = resolveProductImg(product.imageUrl, product);
   const preview = document.getElementById('imgPreview');
   const placeholder = document.getElementById('imgPlaceholder');
   if (imgUrl && preview) {

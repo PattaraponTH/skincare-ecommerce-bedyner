@@ -1,8 +1,63 @@
 const express = require('express');
 const { verifyToken, requireRole } = require('../../middlewares/auth.middleware');
+const { upload } = require('../../middlewares/upload.middleware');
 const productController = require('./product.controller');
 
 const router = express.Router();
+
+/**
+ * @openapi
+ * /api/manager/products/upload-image:
+ *   post:
+ *     tags: [Products]
+ *     summary: อัปโหลดไฟล์รูปสินค้าจริง (Manager)
+ *     description: |
+ *       รับไฟล์ผ่าน multipart/form-data (field name = "image") แล้วเก็บไฟล์จริงไว้ที่
+ *       `staff-manager/backend/uploads/products/` และ serve ผ่าน `/uploads/products/...`
+ *       เอา imageUrl ที่ได้กลับมาไปใส่ตอนเรียก POST/PUT /api/manager/products ต่อ
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image: { type: string, format: binary }
+ *     responses:
+ *       201:
+ *         description: อัปโหลดสำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     imageUrl: { type: string, example: "/uploads/products/product-123.jpg" }
+ *       400:
+ *         description: ไม่มีไฟล์แนบมา หรือชนิดไฟล์ไม่รองรับ
+ */
+const handleUpload = (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      err.statusCode = 400;
+      return next(err);
+    }
+    next();
+  });
+};
+
+router.post(
+  '/upload-image',
+  verifyToken,
+  requireRole('manager'),
+  handleUpload,
+  productController.uploadImage
+);
 
 /**
  * @openapi

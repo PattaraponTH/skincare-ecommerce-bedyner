@@ -17,6 +17,7 @@
 | PUT | `/api/staff/orders/:id/status` | staff | อัปเดตสถานะออเดอร์ |
 | POST | `/api/staff/shipments` | staff | บันทึกข้อมูลการจัดส่ง |
 | PUT | `/api/staff/stock/:productId` | staff | จัดการสต็อกสินค้า |
+
 | GET | `/api/manager/reports/sales` | manager | รายงานยอดขาย |
 | GET | `/api/manager/reports/stock` | manager | รายงานสต็อก |
 | GET | `/api/manager/products` | manager | ดูสินค้าทั้งหมด |
@@ -39,6 +40,7 @@
 | GET | `/api/staff/shipments/:orderId` | staff | ดูข้อมูลการจัดส่งตามออเดอร์ |
 | GET | `/api/staff/stock` | staff | ดูสต็อกสินค้า |
 | PUT | `/api/staff/stock/:productId` | staff | จัดการสต็อกสินค้า |
+
 | GET | `/api/manager/products` | manager | ดูสินค้าทั้งหมด (รองรับ `?category=`) |
 | GET | `/api/manager/products/:id` | manager | ดูสินค้ารายชิ้น |
 | POST | `/api/manager/products` | manager | เพิ่มสินค้า |
@@ -47,6 +49,8 @@
 | GET | `/api/manager/reports/sales` | manager | รายงานยอดขาย + Top Products |
 | GET | `/api/manager/reports/stock` | manager | รายงานสต็อก / สินค้าใกล้หมด |
 | GET | `/api/manager/reports/revenue` | manager | ข้อมูล Revenue Chart (รองรับ `?period=7D\|30D\|1Y`) |
+| GET | `/api/manager/reports/category-sales` | manager | ยอดขายแยกตามหมวดหมู่สินค้า (สำหรับโดนัทชาร์ต) |
+| GET | `/api/manager/reports/skin-types` | manager | สัดส่วนลูกค้าตามประเภทผิว (สำหรับบาร์ชาร์ต) |
 | GET | `/api/manager/users` | manager | ดูบัญชีผู้ใช้ทั้งหมด (รองรับ `?role=`) |
 | GET | `/api/manager/users/:id` | manager | ดูบัญชีผู้ใช้ตาม ID |
 | PUT | `/api/manager/users/:id` | manager | แก้ไขบัญชีผู้ใช้ |
@@ -67,7 +71,7 @@
 | PUT | `/api/manager/reviews/:id/status` | manager | อนุมัติ/ปฏิเสธรีวิว |
 | GET | `/api/manager/settings` | manager | ดูการตั้งค่าระบบ *(in-memory)* |
 | PUT | `/api/manager/settings` | manager | อัปเดตการตั้งค่าระบบ *(in-memory)* |
-| GET | `/api/manager/inventory/lots` | manager | ดูข้อมูล Inventory Lots (สร้างจาก `products.expiry_date` + `brands.name`) |
+
 
 > `*(in-memory)*` = glowtime.sql ไม่มี table รองรับฟีเจอร์นี้ ใช้ RAM เก็บแทน (ข้อมูลจะรีเซ็ตเมื่อ server restart)
 
@@ -103,6 +107,22 @@ staff-manager/backend/
 └── server.js
 ```
 
+## ตารางหน้า → Role ที่อนุญาต
+
+| หน้า (HTML) | Role ที่อนุญาต | API Endpoint หลัก | ไฟล์ JS ที่แก้ |
+|-------------|--------------|-------------------|----------------|
+| `index.html` (Dashboard) | `manager` | `/api/manager/reports/*` | `js/dashboard.js` |
+| `orders.html` | `staff` | `/api/staff/orders` | `js/orders.js` |
+| `customers.html` | `manager` | `/api/manager/users` | inline script ใน HTML |
+| `products.html` | `manager` | `/api/manager/products` | `js/products.js` |
+| `categories.html` | `manager` | `/api/manager/categories` | `js/categories.js` |
+| `inventory.html` | `staff` | `/api/staff/stock` (GET + PUT) | inline script ใน HTML |
+| `content.html` | `manager` | `/api/manager/reviews` | inline script ใน HTML |
+| `marketing.html` | `manager` | `/api/manager/promotions` | inline script ใน HTML |
+| `coupons.html` | `manager` | `/api/manager/coupons` | `js/coupons.js` |
+| `settings.html` | `manager` | `/api/manager/settings` | inline script ใน HTML |
+| `users.html` | `manager` | `/api/manager/users` | `js/users.js` |
+
 ## Login Credentials (seed data จาก glowtime.sql)
 
 | Email | Password | Role |
@@ -113,6 +133,8 @@ staff-manager/backend/
 
 ## Swagger API Docs
 เปิดทดสอบ endpoint ทั้งหมดได้ที่ `/api/docs` (Swagger UI) หรือ import `/api/docs.json` เข้า Postman (api อาจอันยังไม่มีครบ)
+
+http://127.0.0.1:5500/staff-manager/frontend/index.html
 
 > **หมายเหตุ:** ใช้ JWT เดิมจาก Customer Backend ได้เลย (shared `JWT_SECRET`)
 > ตรวจสอบ role ด้วย `requireRole('staff')` หรือ `requireRole('manager')`
