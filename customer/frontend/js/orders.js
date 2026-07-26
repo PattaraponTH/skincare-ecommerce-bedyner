@@ -68,7 +68,7 @@ function renderOrderCard(o) {
     <div class="order-actions">
       ${o.status === 'delivered' ? '<span class="badge-delivered">✓ ได้รับสินค้าแล้ว</span>' : ''}
       ${canReceive ? `<button class="btn-receive" onclick="handleConfirmReceive('${o.orderId}', this)">📦 ยืนยันรับสินค้า</button>` : ''}
-      ${o.status === 'pending_payment' ? '<span class="note-pending">⏳ รอชำระเงิน — ไปที่หน้า Checkout</span>' : ''}
+      ${o.status === 'pending_payment' ? `<button class="btn-pay" onclick="openPayModal('${o.orderId}', ${o.totalAmount})">💳 ชำระเงิน</button>` : ''}
       ${reviewBtns}
     </div>
   </div>`;
@@ -86,6 +86,37 @@ async function handleConfirmReceive(orderId, btn) {
     toast(err.message || 'ยืนยันไม่สำเร็จ', true);
     btn.disabled = false; btn.textContent = '📦 ยืนยันรับสินค้า';
   }
+}
+
+// ─── Payment (ชำระเงิน) ──────────────────────────────
+let _payOrderId = null;
+
+function openPayModal(orderId, totalAmount) {
+  _payOrderId = orderId;
+  document.getElementById('payOrderInfo').textContent = `คำสั่งซื้อ: ${orderId} | ยอดชำระ: ฿${Number(totalAmount).toLocaleString()}`;
+  document.getElementById('payError').textContent = '';
+  openModal('payModal');
+}
+
+async function handleSubmitPay(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('payError');
+  const btn = document.getElementById('paySubmit');
+  const method = document.getElementById('payMethod').value;
+
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'กำลังชำระเงิน…';
+  try {
+    await _api.Payments.checkout(_payOrderId, method);
+    closeModal('payModal');
+    toast('ชำระเงินสำเร็จแล้ว! ✓');
+    loadOrders(); // โหลดรายการใหม่
+  } catch (err) {
+    errEl.textContent = err.message || 'ชำระเงินไม่สำเร็จ';
+  } finally {
+    btn.disabled = false; btn.textContent = 'ยืนยันการชำระเงิน';
+  }
+  return false;
 }
 
 // ─── Write Review ────────────────────────────────────

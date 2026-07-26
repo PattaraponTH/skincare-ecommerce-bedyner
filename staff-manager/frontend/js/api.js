@@ -6,7 +6,13 @@
  * ─────────────────────────────────────────────────────────────
  */
 
-const ADMIN_API_BASE = 'http://localhost:5001';
+// ── API Base URL (auto-detect: Vercel prod vs localhost dev) ──
+const ADMIN_API_BASE = (() => {
+  const h = window.location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5001';
+  // GitHub Pages — ใช้ Vercel backend URL (update เมื่อ deploy จริง)
+  return 'https://glowtime-staff-backend.vercel.app';
+})();
 
 // ── Token & Auth Helpers ─────────────────────────────────────
 const getAdminToken = () => localStorage.getItem('glowtime_token') || sessionStorage.getItem('glowtime_admin_token');
@@ -252,15 +258,173 @@ const AdminStock = {
   },
 };
 
+// ── Admin Categories Module ──────────────────────────────────
+const AdminCategories = {
+  async list() {
+    try {
+      const res = await adminApiFetch('/api/manager/categories');
+      return res.data;
+    } catch {
+      return null; // fallback → categories.js ใช้ MOCK_CATEGORIES
+    }
+  },
+
+  async create(data) {
+    const res = await adminApiFetch('/api/manager/categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async update(id, data) {
+    const res = await adminApiFetch(`/api/manager/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async delete(id) {
+    const res = await adminApiFetch(`/api/manager/categories/${id}`, { method: 'DELETE' });
+    return res.data;
+  },
+};
+
+// ── Admin Coupons Module ──────────────────────────────────────
+const AdminCoupons = {
+  async list() {
+    try {
+      const res = await adminApiFetch('/api/manager/coupons');
+      return res.data;
+    } catch {
+      return null; // fallback → coupons.js ใช้ MOCK_COUPONS
+    }
+  },
+
+  async validate(code) {
+    try {
+      const res = await adminApiFetch(`/api/manager/coupons/validate/${encodeURIComponent(code)}`);
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async create(data) {
+    const res = await adminApiFetch('/api/manager/coupons', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async update(id, data) {
+    const res = await adminApiFetch(`/api/manager/coupons/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
+  async delete(id) {
+    const res = await adminApiFetch(`/api/manager/coupons/${id}`, { method: 'DELETE' });
+    return res.data;
+  },
+
+  async toggleStatus(id) {
+    const res = await adminApiFetch(`/api/manager/coupons/${id}/toggle`, { method: 'PATCH' });
+    return res.data;
+  },
+};
+
+// ── Admin Marketing / Promotions Module ──────────────────────────
+// Endpoint: /api/manager/promotions (in-memory store)
+const AdminMarketing = {
+  async list() {
+    try { const res = await adminApiFetch('/api/manager/promotions'); return res.data; }
+    catch { return null; } // fallback → marketing.html ใช้ mock
+  },
+  async create(data) {
+    const res = await adminApiFetch('/api/manager/promotions', { method: 'POST', body: JSON.stringify(data) });
+    return res.data;
+  },
+  async update(id, data) {
+    const res = await adminApiFetch(`/api/manager/promotions/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    return res.data;
+  },
+  async delete(id) {
+    const res = await adminApiFetch(`/api/manager/promotions/${id}`, { method: 'DELETE' });
+    return res.data;
+  },
+};
+
+// ── Admin Reviews Module ──────────────────────────────────────
+// Endpoint: /api/manager/reviews (query จาก reviews table ใน DB)
+const AdminReviews = {
+  async list() {
+    try { const res = await adminApiFetch('/api/manager/reviews'); return res.data; }
+    catch { return null; }
+  },
+  async updateStatus(id, status) {
+    const res = await adminApiFetch(`/api/manager/reviews/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }), // approved | rejected | pending
+    });
+    return res.data;
+  },
+};
+
+// ── Admin Settings Module ─────────────────────────────────────
+// Endpoint: /api/manager/settings (in-memory store)
+const AdminSettings = {
+  async get() {
+    try { const res = await adminApiFetch('/api/manager/settings'); return res.data; }
+    catch { return null; }
+  },
+  async update(data) {
+    const res = await adminApiFetch('/api/manager/settings', { method: 'PUT', body: JSON.stringify(data) });
+    return res.data;
+  },
+};
+
+// ── Admin Inventory Module ────────────────────────────────────
+// Endpoint: /api/manager/inventory/lots (สร้างจาก products.expiry_date)
+const AdminInventory = {
+  async getLots() {
+    try { const res = await adminApiFetch('/api/manager/inventory/lots'); return res.data; }
+    catch { return null; }
+  },
+};
+
+// ── Admin Revenue Chart Module ───────────────────────────────
+// Endpoint: /api/manager/reports/revenue?period=7D|30D|1Y
+const AdminRevenueChart = {
+  async get(period = '7D') {
+    if (!['7D','30D','1Y'].includes(period)) period = '7D';
+    try {
+      const res = await adminApiFetch(`/api/manager/reports/revenue?period=${period}`);
+      return res.data;
+    } catch { return null; } // fallback → dashboard.js ใช้ CHART_DATA mock
+  },
+};
+
 // Export to Global Scope
 window.GlowtimeAdminAPI = {
-  Auth:      AdminAuth,
-  Products:  AdminProducts,
-  Orders:    AdminOrders,
-  Reports:   AdminReports,
-  Users:     AdminUsers,
-  Shipments: AdminShipments,
-  Stock:     AdminStock,
+  Auth:         AdminAuth,
+  Products:     AdminProducts,
+  Orders:       AdminOrders,
+  Reports:      AdminReports,
+  Users:        AdminUsers,
+  Shipments:    AdminShipments,
+  Stock:        AdminStock,
+  Categories:   AdminCategories,
+  Coupons:      AdminCoupons,
+  Marketing:    AdminMarketing,   // ← ใหม่
+  Reviews:      AdminReviews,     // ← ใหม่
+  Settings:     AdminSettings,    // ← ใหม่
+  Inventory:    AdminInventory,   // ← ใหม่
+  RevenueChart: AdminRevenueChart,// ← ใหม่
   getAdminToken,
   getAdminUser,
 };

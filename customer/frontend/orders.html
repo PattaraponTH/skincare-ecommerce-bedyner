@@ -80,6 +80,31 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════
+     PAYMENT MODAL
+════════════════════════════════════════════════════ -->
+<div class="overlay" id="payModal" onclick="if(event.target===this)closeModal('payModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('payModal')">&times;</button>
+    <p class="modal-eyebrow">Payment</p>
+    <h2 class="modal-title">ชำระเงิน</h2>
+    <p style="font-size:0.85rem; color:var(--gray); margin-bottom:1rem;" id="payOrderInfo"></p>
+    <form id="payForm" onsubmit="return handleSubmitPay(event)">
+      <div class="form-field">
+        <label for="payMethod">เลือกวิธีชำระเงิน</label>
+        <select id="payMethod" class="review-textarea" style="height:auto; padding:0.8rem; font-size:0.85rem; background:#fff; border:1px solid var(--border); width:100%;">
+          <option value="credit_card">💳 บัตรเครดิต / เดบิต</option>
+          <option value="qr_code">📱 QR Code / PromptPay</option>
+          <option value="bank_transfer">🏦 โอนเงินผ่านธนาคาร</option>
+          <option value="cash_on_delivery">💵 เก็บเงินปลายทาง (COD)</option>
+        </select>
+      </div>
+      <div class="form-error" id="payError"></div>
+      <button type="submit" class="form-submit" id="paySubmit">ยืนยันการชำระเงิน</button>
+    </form>
+  </div>
+</div>
+
 <!-- SCRIPTS -->
 <script src="api.js"></script>
 <script src="js/shared.js"></script>

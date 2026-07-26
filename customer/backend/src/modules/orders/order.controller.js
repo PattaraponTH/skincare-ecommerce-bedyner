@@ -4,9 +4,9 @@ const orderService = require('./order.service');
  * POST /api/orders
  * body: { shippingAddress: { recipient, address, province, postalCode }, paymentMethod }
  */
-const createOrder = (req, res, next) => {
+const createOrder = async (req, res, next) => {
   try {
-    const order = orderService.createOrder(req.user.userId, req.body);
+    const order = await orderService.createOrder(req.user.customerId, req.body);
     res.status(201).json({ success: true, data: order });
   } catch (err) { next(err); }
 };
@@ -14,9 +14,9 @@ const createOrder = (req, res, next) => {
 /**
  * GET /api/orders
  */
-const getMyOrders = (req, res, next) => {
+const getMyOrders = async (req, res, next) => {
   try {
-    const orders = orderService.getMyOrders(req.user.userId);
+    const orders = await orderService.getMyOrders(req.user.customerId);
     res.json({ success: true, count: orders.length, data: orders });
   } catch (err) { next(err); }
 };
@@ -24,9 +24,9 @@ const getMyOrders = (req, res, next) => {
 /**
  * GET /api/orders/:orderId
  */
-const getOrderById = (req, res, next) => {
+const getOrderById = async (req, res, next) => {
   try {
-    const order = orderService.getOrderById(req.user.userId, req.params.orderId);
+    const order = await orderService.getOrderById(req.user.customerId, req.params.orderId);
     res.json({ success: true, data: order });
   } catch (err) { next(err); }
 };
@@ -35,9 +35,11 @@ const getOrderById = (req, res, next) => {
  * PUT /api/orders/:orderId/receive
  * ลูกค้ายืนยันว่าได้รับสินค้าแล้ว → status = delivered
  */
-const confirmReceive = (req, res, next) => {
+const confirmReceive = async (req, res, next) => {
   try {
-    const order = orderService.confirmReceive(req.user.userId, req.params.orderId);
+    // Bug fix: ต้องใช้ customerId (ไม่ใช่ userId) เพื่อ verify ownership
+    // และต้อง await เพราะ confirmReceive เป็น async function
+    const order = await orderService.confirmReceive(req.user.customerId, req.params.orderId);
     res.json({ success: true, message: 'ยืนยันรับสินค้าเรียบร้อย', data: order });
   } catch (err) { next(err); }
 };

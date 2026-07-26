@@ -13,17 +13,17 @@
 <!-- ── AUTH LOCK OVERLAY ── -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card">
-    <span class="auth-badge">SkincareShop · Admin Protection</span>
+    <span class="auth-badge">GLOWTIME · Staff & Manager Portal</span>
     <h2 class="auth-title">Admin Authentication</h2>
-    <p class="auth-desc">Please sign in to access the admin system</p>
+    <p class="auth-desc">Please sign in to access admin system</p>
     <form onsubmit="handleAdminLogin(event)">
       <div class="form-group">
         <label>Username / Email</label>
-        <input type="text" id="adminUser" class="form-control" value="admin" required placeholder="admin@skincareshop.com">
+        <input type="text" id="adminUser" class="form-control" value="manager01@gmail.com" required placeholder="manager01@gmail.com">
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="adminPass" class="form-control" value="password123" required>
+        <input type="password" id="adminPass" class="form-control" value="123456" required>
       </div>
       <button type="submit" class="btn-submit">Sign In to Dashboard</button>
     </form>
@@ -59,27 +59,8 @@
               <th>Lot Status</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><strong>LOT-B8842</strong></td>
-              <td>Hydrating Serum (ID: #1001)</td>
-              <td>GLOWTIME OEM Co., Ltd.</td>
-              <td>฿180 / unit</td>
-              <td>500 units</td>
-              <td>01/06/2025</td>
-              <td>30/06/2028</td>
-              <td><span class="status-badge badge-success">In Stock</span></td>
-            </tr>
-            <tr>
-              <td><strong>LOT-C4410</strong></td>
-              <td>Daily SPF 50+ (ID: #1007)</td>
-              <td>GLOWTIME Lab Ltd.</td>
-              <td>฿150 / unit</td>
-              <td>5 units</td>
-              <td>15/05/2025</td>
-              <td>31/05/2028</td>
-              <td><span class="status-badge badge-danger">Low Stock (5 units)</span></td>
-            </tr>
+          <tbody id="inventoryTbody">
+            <tr><td colspan="8" style="text-align:center; color:var(--gray); padding:1.5rem;">กำลังโหลดข้อมูล...</td></tr>
           </tbody>
         </table>
       </div>
@@ -94,5 +75,30 @@
 <script src="js/shared.js"></script>
 <script src="js/topbar.js"></script>
 <script src="js/sidebar.js"></script>
+<script>
+async function loadInventory() {
+  if (!window.GlowtimeAdminAPI) return;
+  try {
+    const lots = await window.GlowtimeAdminAPI.Inventory.getLots();
+    const tbody = document.getElementById('inventoryTbody');
+    if (!tbody || !Array.isArray(lots) || lots.length === 0) return;
+    tbody.innerHTML = lots.map(lot => `
+      <tr>
+        <td><strong>${lot.lotNo}</strong></td>
+        <td>${lot.productName}</td>
+        <td>${lot.supplier}</td>
+        <td>-</td>
+        <td>${lot.qtyReceived} units</td>
+        <td>-</td>
+        <td>${lot.expDate || '-'}</td>
+        <td><span class="status-badge badge-${
+          lot.status === 'In Stock' ? 'success' : lot.status === 'Low Stock' ? 'warning' : 'danger'
+        }">${lot.status}</span></td>
+      </tr>
+    `).join('');
+  } catch (e) { console.warn('[inventory] load error:', e.message); }
+}
+document.addEventListener('DOMContentLoaded', loadInventory);
+</script>
 </body>
 </html>

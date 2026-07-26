@@ -13,17 +13,17 @@
 <!-- ── AUTH LOCK OVERLAY ── -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card">
-    <span class="auth-badge">SkincareShop · Admin Protection</span>
+    <span class="auth-badge">GLOWTIME · Staff & Manager Portal</span>
     <h2 class="auth-title">Admin Authentication</h2>
-    <p class="auth-desc">Please sign in to access the admin system</p>
+    <p class="auth-desc">Please sign in with Manager account</p>
     <form onsubmit="handleAdminLogin(event)">
       <div class="form-group">
-        <label>Username / Email</label>
-        <input type="text" id="adminUser" class="form-control" value="admin" required placeholder="admin@skincareshop.com">
+        <label>Email</label>
+        <input type="email" id="adminUser" class="form-control" value="manager01@gmail.com" required placeholder="manager01@gmail.com">
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="adminPass" class="form-control" value="password123" required>
+        <input type="password" id="adminPass" class="form-control" value="123456" required>
       </div>
       <button type="submit" class="btn-submit">Sign In to Dashboard</button>
     </form>
@@ -41,29 +41,23 @@
     <!-- BUNDLE SETS -->
     <div class="content-card">
       <div class="card-header">
-        <h3 class="card-title">Bundle Sets</h3>
-        <button class="btn-dark-sm" onclick="showToast('Opening Create Bundle form...')">+ Create Bundle</button>
+        <h3 class="card-title">Promotions & Campaigns</h3>
+        <button class="btn-dark-sm" onclick="showToast('Opening Create Promotion form...')">+ Create Promotion</button>
       </div>
 
       <div class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Bundle Name</th>
-              <th>Included Products</th>
-              <th>Regular Price</th>
-              <th>Bundle Price</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Discount</th>
+              <th>Period</th>
               <th>Status</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><strong>Calming Duo Set</strong></td>
-              <td>Hyaluronic Serum (30ml) + Barrier Repair Cream (50g)</td>
-              <td>฿1,270</td>
-              <td><strong style="color:var(--status-success);">฿990 (save ฿280)</strong></td>
-              <td><span class="status-badge badge-success">Active</span></td>
-            </tr>
+          <tbody id="promotionsTbody">
+            <tr><td colspan="5" style="text-align:center; color:var(--gray); padding:1.5rem;">กำลังโหลดข้อมูล...</td></tr>
           </tbody>
         </table>
       </div>
@@ -89,5 +83,26 @@
 <script src="js/shared.js"></script>
 <script src="js/topbar.js"></script>
 <script src="js/sidebar.js"></script>
+<script>
+async function loadPromotions() {
+  if (!window.GlowtimeAdminAPI) return;
+  try {
+    const promos = await window.GlowtimeAdminAPI.Marketing.list();
+    const tbody = document.getElementById('promotionsTbody');
+    if (!tbody || !Array.isArray(promos) || promos.length === 0) return;
+    tbody.innerHTML = promos.map(p => `
+      <tr>
+        <td><strong>${p.title}</strong><br><span style="font-size:0.72rem;color:var(--gray);">${p.description || ''}</span></td>
+        <td><span class="status-badge badge-info">${p.type || '-'}</span></td>
+        <td>${p.discount ? p.discount + '%' : '-'}</td>
+        <td style="font-size:0.78rem;">${p.startDate || '-'} → ${p.endDate || '-'}</td>
+        <td><span class="status-badge badge-${
+          p.status === 'Active' ? 'success' : p.status === 'Scheduled' ? 'warning' : 'danger'
+        }">${p.status}</span></td>
+      </tr>`);
+  } catch (e) { console.warn('[marketing] load error:', e.message); }
+}
+document.addEventListener('DOMContentLoaded', loadPromotions);
+</script>
 </body>
 </html>

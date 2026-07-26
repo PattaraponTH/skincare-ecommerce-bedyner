@@ -12,13 +12,27 @@ function renderAdminTopbar() {
 
   // Preserve page title & description if present in existing DOM
   const existingTitleEl = topbarEl.querySelector('.page-title');
-  const existingSubEl = topbarEl.querySelector('.page-sub, p');
+  const existingSubEl   = topbarEl.querySelector('.page-sub, p');
 
-  const pageTitle = topbarEl.dataset.title || (existingTitleEl ? existingTitleEl.textContent : 'Admin Suite');
-  const pageSub = topbarEl.dataset.sub || (existingSubEl ? existingSubEl.textContent : 'GLOWTIME Management System');
+  const pageTitle = topbarEl.dataset.title || (existingTitleEl ? existingTitleEl.textContent.trim() : 'Admin Suite');
+  const pageSub   = topbarEl.dataset.sub   || (existingSubEl  ? existingSubEl.textContent.trim()  : 'GLOWTIME Management System');
+
+  // ── Extra controls slot (e.g. time-filter buttons on Dashboard) ──
+  // Set data-extra-controls="timefilter" on <header> in the HTML page to inject them.
+  const extraControls = topbarEl.dataset.extraControls || '';
+
+  let extraHTML = '';
+  if (extraControls === 'timefilter') {
+    extraHTML = `
+      <div class="time-filter-group">
+        <button class="time-filter-btn active" id="tfBtn7D" onclick="switchTimeframe('7D', this)">7 Days</button>
+        <button class="time-filter-btn" id="tfBtn30D" onclick="switchTimeframe('30D', this)">30 Days</button>
+        <button class="time-filter-btn" id="tfBtn1Y" onclick="switchTimeframe('1Y', this)">1 Year</button>
+      </div>`;
+  }
 
   const currentUser = (typeof getCurrentAdminUser === 'function') ? getCurrentAdminUser() : {
-    avatar: 'VK', name: 'Visada K.', email: 'admin@skincareshop.com', roleTitle: 'Super Admin', badgeClass: 'badge-success'
+    avatar: 'VK', name: 'Visada K.', email: 'admin@glowtime.com', roleTitle: 'Super Admin', badgeClass: 'badge-success'
   };
 
   topbarEl.innerHTML = `
@@ -28,6 +42,8 @@ function renderAdminTopbar() {
     </div>
 
     <div class="topbar-actions">
+      ${extraHTML}
+
       <!-- GLOBAL SEARCH BOX -->
       <div class="search-box">
         <span style="color:var(--gray); font-size:0.75rem; font-weight:600; letter-spacing:0.05em;">&#x2315;</span>
@@ -74,16 +90,16 @@ function renderAdminTopbar() {
             <span class="user-role">${currentUser.roleTitle || 'Super Admin'} ▼</span>
           </div>
         </button>
-        
+
         <div class="user-dropdown-menu" id="userDropdown">
           <div class="dropdown-header">
             <strong>${currentUser.name || 'Visada K.'}</strong>
-            <p>${currentUser.email || 'admin@skincareshop.com'}</p>
+            <p>${currentUser.email || 'admin@glowtime.com'}</p>
             <span class="status-badge ${currentUser.badgeClass || 'badge-success'}" style="margin-top:0.4rem;">${currentUser.roleTitle || 'Super Administrator'}</span>
           </div>
           <hr style="border:0; border-top:1px solid var(--border); margin:0.5rem 0;"/>
-          <button onclick="window.location.href='settings.html'" class="dropdown-item">Settings</button>
-          <button onclick="lockAdminSession()" class="dropdown-item logout">Logout</button>
+          <button onclick="window.location.href='settings.html'" class="dropdown-item">⚙️ Settings</button>
+          <button onclick="lockAdminSession()" class="dropdown-item logout">🚪 Logout</button>
         </div>
       </div>
     </div>

@@ -3,9 +3,9 @@ const cartService = require('./cart.service');
 /**
  * GET /api/cart
  */
-const getCart = (req, res, next) => {
+const getCart = async (req, res, next) => {
   try {
-    const cart = cartService.getCart(req.user.userId);
+    const cart = await cartService.getCart(req.user.customerId);
     res.json({ success: true, data: cart });
   } catch (err) { next(err); }
 };
@@ -14,13 +14,15 @@ const getCart = (req, res, next) => {
  * POST /api/cart/items
  * body: { productId, qty }
  */
-const addItem = (req, res, next) => {
+const addItem = async (req, res, next) => {
   try {
-    const { productId, qty } = req.body;
-    if (!productId || !qty) {
-      return res.status(400).json({ success: false, message: 'กรุณาระบุ productId และ qty' });
+    const { productId } = req.body;
+    const qty = Number(req.body.qty);
+    // Bug #4 fix: ตรวจสอบหลัง Number() เพื่อกัน edge case qty="0" หรือ qty=NaN
+    if (!productId || isNaN(qty) || qty < 1) {
+      return res.status(400).json({ success: false, message: 'กรุณาระบุ productId และ qty ที่ถูกต้อง (>= 1)' });
     }
-    const cart = cartService.addItem(req.user.userId, { productId, qty: Number(qty) });
+    const cart = await cartService.addItem(req.user.customerId, { productId, qty });
     res.status(201).json({ success: true, data: cart });
   } catch (err) { next(err); }
 };
@@ -29,13 +31,14 @@ const addItem = (req, res, next) => {
  * PUT /api/cart/items/:cartItemId
  * body: { qty }
  */
-const updateItem = (req, res, next) => {
+const updateItem = async (req, res, next) => {
   try {
-    const { qty } = req.body;
-    if (!qty) {
-      return res.status(400).json({ success: false, message: 'กรุณาระบุ qty' });
+    const qty = Number(req.body.qty);
+    // Bug #4 fix: ตรวจสอบหลัง Number() เพื่อกัน edge case qty="0" หรือ qty=NaN
+    if (isNaN(qty) || qty < 1) {
+      return res.status(400).json({ success: false, message: 'กรุณาระบุ qty ที่ถูกต้อง (>= 1)' });
     }
-    const cart = cartService.updateItem(req.user.userId, req.params.cartItemId, { qty: Number(qty) });
+    const cart = await cartService.updateItem(req.user.customerId, req.params.cartItemId, { qty });
     res.json({ success: true, data: cart });
   } catch (err) { next(err); }
 };
@@ -43,9 +46,9 @@ const updateItem = (req, res, next) => {
 /**
  * DELETE /api/cart/items/:cartItemId
  */
-const removeItem = (req, res, next) => {
+const removeItem = async (req, res, next) => {
   try {
-    const cart = cartService.removeItem(req.user.userId, req.params.cartItemId);
+    const cart = await cartService.removeItem(req.user.customerId, req.params.cartItemId);
     res.json({ success: true, message: 'ลบสินค้าออกจากตะกร้าแล้ว', data: cart });
   } catch (err) { next(err); }
 };

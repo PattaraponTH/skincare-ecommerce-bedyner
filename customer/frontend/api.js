@@ -2,11 +2,16 @@
  * GLOWTIME — Customer Frontend API Client
  * ─────────────────────────────────────────────────────
  * Wrapper รอบ fetch() เพื่อเชื่อมกับ Customer Backend
- * Base URL: http://localhost:5000
+ * Base URL: https://witchayada-skincare-ecommerce.vercel.app
  * ─────────────────────────────────────────────────────
  */
 
-const API_BASE = 'http://localhost:5000';
+// เลือกปลายทาง API อัตโนมัติ:
+// - เปิดจากเครื่องตัวเอง (localhost) → เรียก backend ในเครื่องที่พอร์ต 5000
+// - เปิดจากเว็บที่ deploy แล้ว → เรียก URL production
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000'
+  : 'https://witchayada-skincare-ecommerce.vercel.app';
 
 // ── Token helpers ──────────────────────────────────────
 const getToken = () => localStorage.getItem('glowtime_token');
@@ -78,6 +83,54 @@ const MOCK_PRODUCTS = [
 ];
 
 // ── Products ───────────────────────────────────────────
+/**
+ * แปลงข้อมูลสินค้าจาก backend (MySQL) ให้อยู่ในรูปแบบที่หน้าเว็บใช้
+ * — Backend เวอร์ชัน DB คืน imageUrl เป็น string เดี่ยว และ
+ *   ingredients / skinTypeTarget เป็น string ("A, B, C")
+ *   ส่วนหน้าเว็บคาดหวังเป็น array ทั้งหมด
+ * — แปลงที่ฝั่ง frontend เพื่อไม่ต้องแก้โค้ด backend
+ * — ถ้าข้อมูลเป็น array อยู่แล้ว (mock เดิม) จะส่งผ่านตามเดิม ใช้ได้ทั้งคู่
+ */
+function normalizeProduct(p) {
+  if (!p) return p;
+  const toArr = (v, lower = false) => {
+    if (Array.isArray(v)) return v;
+    if (!v) return [];
+    return String(v).split(',').map(s => lower ? s.trim().toLowerCase() : s.trim()).filter(Boolean);
+  };
+  // ── เลือกรูปสินค้า ───────────────────────────────
+  // 1) ถ้า DB ให้ path ในเครื่อง (images/...) มา → ใช้ตามนั้น
+  // 2) ถ้าชื่อสินค้าตรงกับไฟล์รูปที่มี → ใช้ไฟล์นั้น
+  // 3) ถ้าไม่ตรง → เลือกรูปตามหมวดหมู่ (fallback ชั่วคราวจนกว่า DB จะ seed ข้อมูลชุดใหม่)
+  const KNOWN_IMAGES = ['hydrating-serum','renewal-cream','radiance-oil','gentle-cleanser',
+                        'hydrating-mist','glow-mask','daily-spf-50','niacinamide-10','rose-barrier-cream'];
+  const CATEGORY_IMAGE = {
+    serum: 'hydrating-serum', toner: 'hydrating-mist', moisturizer: 'renewal-cream',
+    cleanser: 'gentle-cleanser', sunscreen: 'daily-spf-50', oil: 'radiance-oil',
+    mist: 'hydrating-mist', mask: 'glow-mask', cream: 'renewal-cream',
+  };
+  const slug = String(p.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  let imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.imageUrl ? [p.imageUrl] : []);
+  const first = imgs[0] || '';
+  if (!first.startsWith('images/')) {
+    let pick = null;
+    if (KNOWN_IMAGES.includes(slug)) pick = slug;                                 // ชื่อตรงไฟล์เป๊ะ
+    else if (String(p.name || '').toLowerCase().includes('niacinamide')) pick = 'niacinamide-10';
+    else pick = CATEGORY_IMAGE[String(p.category || '').toLowerCase()] || null;   // เลือกตามหมวด
+    imgs = pick ? [`images/products/${pick}.jpg`] : imgs;
+  }
+  return {
+    ...p,
+    price: Number(p.price) || 0,
+    stockQty: Number(p.stockQty) || 0,
+    ingredients: toArr(p.ingredients),
+    skinTypeTarget: toArr(p.skinTypeTarget, true),
+    images: imgs,
+    averageRating: Number(p.averageRating) || 0,
+    reviewCount: Number(p.reviewCount) || 0,
+  };
+}
+
 const Products = {
   async list(filters = {}) {
     try {
@@ -90,7 +143,7 @@ const Products = {
       if (filters.search) params.set('search', filters.search);
       const qs = params.toString();
       const res = await apiFetch(`/api/products${qs ? '?' + qs : ''}`);
-      return res.data;
+      return (res.data || []).map(normalizeProduct);
     } catch (e) {
       console.warn('[CustomerAPI] Products API failed/offline, fallback to mock data');
       let result = MOCK_PRODUCTS;
@@ -109,7 +162,7 @@ const Products = {
   async get(id) {
     try {
       const res = await apiFetch(`/api/products/${id}`);
-      return res.data;
+      return normalizeProduct(res.data);
     } catch (e) {
       return MOCK_PRODUCTS.find(p => p.id === Number(id)) || MOCK_PRODUCTS[0];
     }
@@ -146,27 +199,53 @@ const Cart = {
 };
 
 // ── Orders ─────────────────────────────────────────────
+/**
+ * แปลงข้อมูลออเดอร์จาก backend (MySQL) ให้ตรงกับที่หน้าเว็บใช้
+ * — รายการรวม (getMyOrders) ไม่ส่ง items มา → กัน o.items.map พัง
+ * — สถานะจาก seed เก่าเป็นตัวใหญ่ ("Confirmed") → แปลงเป็นตัวเล็กให้ timeline จับได้
+ */
+function normalizeOrder(o) {
+  if (!o) return o;
+  let status = String(o.status || '').toLowerCase();
+  if (status === 'pending') status = 'pending_payment';
+  return {
+    ...o,
+    status,
+    items: Array.isArray(o.items) ? o.items : [],
+    totalAmount: Number(o.totalAmount) || 0,
+  };
+}
+
 const Orders = {
   async create(shippingAddress, paymentMethod) {
     const res = await apiFetch('/api/orders', {
       method: 'POST',
       body: JSON.stringify({ shippingAddress, paymentMethod }),
     });
-    return res.data;
+    return normalizeOrder(res.data);
   },
 
   async list() {
     const res = await apiFetch('/api/orders');
-    return res.data;
+    const orders = (res.data || []).map(normalizeOrder);
+    // backend ส่งรายการรวมมาโดยไม่มี items → ดึงรายละเอียดมาเติมทีละออเดอร์
+    await Promise.all(orders.map(async (o) => {
+      if (o.items.length) return;
+      try {
+        const full = await Orders.get(o.orderId);
+        o.items = Array.isArray(full.items) ? full.items : [];
+      } catch { /* เติมไม่ได้ก็แสดงการ์ดแบบไม่มีรายการสินค้า */ }
+    }));
+    return orders;
   },
 
   async get(orderId) {
-    const res = await apiFetch(`/api/orders/${orderId}`);
-    return res.data;
+    const res = await apiFetch(`/api/orders/${dbOrderId(orderId)}`);
+    return normalizeOrder(res.data);
   },
 
   async confirmReceive(orderId) {
-    const res = await apiFetch(`/api/orders/${orderId}/receive`, { method: 'PUT' });
+    const res = await apiFetch(`/api/orders/${dbOrderId(orderId)}/receive`, { method: 'PUT' });
     return res.data;
   },
 };
@@ -188,15 +267,28 @@ const Reviews = {
 };
 
 // ── Payments ───────────────────────────────────────────
+/**
+ * แปลงเลขออเดอร์ให้เป็นตัวเลขที่ backend (MySQL) ใช้ได้
+ * — backend คืนเลขสวยงาม "ORD-20260724-0005" แต่ตอนรับกลับต้องการเลขจริง (5)
+ * — กันบัค Number("ORD-...") = NaN ที่ทำให้ชำระเงินพัง (500)
+ */
+function dbOrderId(orderId) {
+  if (typeof orderId === 'number') return orderId;
+  const s = String(orderId || '');
+  if (/^\d+$/.test(s)) return Number(s);
+  const m = /-(\d+)$/.exec(s);          // "ORD-20260724-0005" → "0005" → 5
+  return m ? Number(m[1]) : orderId;
+}
+
 const Payments = {
   async checkout(orderId, method) {
     const res = await apiFetch('/api/payments/checkout', {
       method: 'POST',
-      body: JSON.stringify({ orderId, method }),
+      body: JSON.stringify({ orderId: dbOrderId(orderId), method }),
     });
     return res.data;
   },
 };
 
 // Export เพื่อใช้ใน HTML (global scope)
-window.GlowtimeAPI = { Auth, Products, Cart, Orders, Reviews, Payments, getUser, getToken };
+window.GlowtimeAPI = { Auth, Products, Cart, Orders, Reviews, Payments, getUser, getToken, normalizeProduct };

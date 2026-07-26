@@ -11,9 +11,14 @@ const router = express.Router();
  *     tags: [Auth]
  *     summary: เข้าสู่ระบบ (Staff / Manager)
  *     description: |
- *       **Mock accounts (password: `password123`)**
- *       - `staff@glowtime.com` — role: staff
- *       - `manager@glowtime.com` — role: manager
+ *       **Accounts จาก glowtime.sql seed data (password: `123456`)**
+ *       | Email | Role |
+ *       |-------|------|
+ *       | staff01@gmail.com | staff |
+ *       | staff02@gmail.com | staff |
+ *       | manager01@gmail.com | manager |
+ *
+ *       > หมายเหตุ: password ถูก bcrypt hash แล้วผ่าน migrate.js
  *     requestBody:
  *       required: true
  *       content:
@@ -22,8 +27,8 @@ const router = express.Router();
  *             type: object
  *             required: [email, password]
  *             properties:
- *               email:    { type: string, format: email, example: staff@glowtime.com }
- *               password: { type: string, example: password123 }
+ *               email:    { type: string, format: email, example: manager01@gmail.com }
+ *               password: { type: string, example: "123456" }
  *     responses:
  *       200:
  *         description: เข้าสู่ระบบสำเร็จ ได้รับ JWT token
@@ -49,6 +54,10 @@ router.post('/login', authController.login);
  *   get:
  *     tags: [Auth]
  *     summary: ดูข้อมูล Profile ของตัวเอง (staff / manager)
+ *     description: |
+ *       ดึงข้อมูลจาก users JOIN staffs
+ *       - users: user_id, username, email, role
+ *       - staffs: staff_id, position
  *     security:
  *       - bearerAuth: []
  *     responses:

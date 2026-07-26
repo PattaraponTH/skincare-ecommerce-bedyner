@@ -40,6 +40,12 @@
   padding: 0.55rem 1.2rem; font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
 }
 .btn-receive:disabled { opacity: 0.5; cursor: default; }
+.btn-pay {
+  background: var(--black); color: #fff; border: none; cursor: pointer;
+  padding: 0.55rem 1.2rem; font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.btn-pay:hover { opacity: 0.85; }
+.btn-pay:disabled { opacity: 0.5; cursor: default; }
 .btn-review-item {
   background: transparent; color: var(--black); border: 1px solid var(--black); cursor: pointer;
   padding: 0.55rem 1.2rem; font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;

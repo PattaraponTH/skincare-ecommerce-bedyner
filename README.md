@@ -10,10 +10,7 @@
 
 ## 1. ข้อมูลกลุ่ม (Group Information)
 
-**ชื่อกลุ่ม:** GLOWTIME
-
-**ชื่อกลุ่ม:** ......................................
-
+**ชื่อกลุ่ม:** GlowTime
 
 **จำนวนสมาชิก:** 5 คน
 
@@ -109,7 +106,7 @@
 | 3 | **Design (การออกแบบ)** | ออกแบบฐานข้อมูล (ER Diagram, Data Schema) ออกแบบ System Architecture แบบ REST API และออกแบบ UI/UX ผ่าน Wireframe ด้วย Figma ตาม Persona ที่กำหนด |
 | 4 | **Development (การพัฒนา)** | พัฒนา Frontend ด้วย React.js พัฒนา Backend ด้วย Node.js/Express.js เชื่อมต่อฐานข้อมูล MySQL และพัฒนา REST API ให้ครบตามที่ออกแบบไว้ |
 | 5 | **Testing (การทดสอบ)** | ทดสอบการทำงานของระบบด้วยวิธี UAT (User Acceptance Testing) แบบ Manual Testing ครอบคลุมทุกฟังก์ชันของทั้ง 3 role ตาม Test Plan 18 เคส |
-| 6 | **Deployment (การติดตั้ง)** | นำระบบขึ้น Cloud Platform ฟรี (Vercel สำหรับ Frontend และ Render สำหรับ Backend) โดยเชื่อมต่อกับ GitHub เพื่อทำ CI/CD แบบ Auto Deploy อัตโนมัติเมื่อ Push โค้ด และทดสอบการใช้งานจริงก่อนเปิดให้บริการ |
+| 6 | **Deployment (การติดตั้ง)** | นำระบบขึ้น Cloud Platform ฟรี (GitHub Pages สำหรับ Frontend และ Vercel สำหรับ Backend) โดยเชื่อมต่อกับ GitHub เพื่อทำ CI/CD แบบ Auto Deploy อัตโนมัติเมื่อ Push โค้ด และทดสอบการใช้งาน |
 | 7 | **Maintenance (การบำรุงรักษา)** | ติดตามประสิทธิภาพระบบ แก้ไขข้อผิดพลาดที่พบหลังเปิดใช้งาน รับ Feedback จากผู้ใช้เพื่อปรับปรุง UI/UX และวางแผนพัฒนาฟีเจอร์เพิ่มเติมในอนาคต |
 
 ---
@@ -779,21 +776,21 @@ erDiagram
 
 ```mermaid
 graph LR
-    Users[ผู้ใช้งาน: ลูกค้า/พนักงาน/ผู้จัดการ] -->|HTTPS| Vercel[Vercel - Frontend Hosting + CDN]
-    Vercel -->|REST API| Backend[Render - Node.js+Express Backend]
-    Backend --> DB[(Railway - MySQL Database)]
-    Backend --> Storage[Cloudinary - Product Images]
-    GitHub[GitHub Repository] -->|Auto Deploy| Vercel
-    GitHub -->|Auto Deploy| Backend
+    Users[ผู้ใช้งาน: ลูกค้า/พนักงาน/ผู้จัดการ] -->|HTTPS| GHPages[GitHub Pages - Frontend Hosting]
+    GHPages -->|REST API| Vercel[Vercel - Node.js Serverless Backend]
+    Vercel --> DB[(Railway - MySQL Database)]
+    Vercel --> Storage[Cloudinary - Product Images]
+    GitHub[GitHub Repository] -->|Auto Deploy| GHPages
+    GitHub -->|Auto Deploy| Vercel
 ```
 
 **Workflow การ Deploy:**
 1. Push โค้ดขึ้น GitHub Repository
-2. Vercel และ Render ดึงโค้ดจาก GitHub อัตโนมัติ พร้อมรัน Build ในตัว (ไม่ต้องตั้ง GitHub Actions เพิ่มเติม)
-3. Deploy Frontend ขึ้น Vercel (Free Tier) และ Backend ขึ้น Render (Free Tier) โดยไม่มีค่าใช้จ่าย
+2. GitHub Pages และ Vercel ดึงโค้ดจาก GitHub อัตโนมัติ พร้อมรัน Build ในตัว (ไม่ต้องตั้ง GitHub Actions เพิ่มเติม)
+3. Deploy Frontend ขึ้น GitHub Pages (Free Tier) และ Backend ขึ้น Vercel (Free Tier) โดยไม่มีค่าใช้จ่าย
 4. ตรวจสอบการทำงานผ่าน Manual UAT ก่อนเปิดใช้งานจริง
 
-> **หมายเหตุ:** เลือกใช้ Vercel + Render + Railway เนื่องจากรองรับ Free Tier เหมาะกับโครงงานนักศึกษาที่ไม่มีค่าใช้จ่ายด้าน Cloud โดย Vercel ให้บริการ Hosting + CDN สำหรับ React.js โดยตรง, Render ใช้รัน Backend Node.js/Express แบบ Web Service ฟรี, Railway ใช้เป็น MySQL Database แบบ Free Tier และ Cloudinary ใช้จัดเก็บรูปภาพสินค้าแทน AWS S3
+> **หมายเหตุ:** เลือกใช้ GitHub Pages + Vercel + Railway เนื่องจากรองรับ Free Tier เหมาะกับโครงงานนักศึกษาที่ไม่มีค่าใช้จ่ายด้าน Cloud โดย GitHub Pages ให้บริการ Hosting สำหรับ Static Assets ของ Frontend โดยตรง, Vercel ใช้รัน Backend Node.js แบบ Serverless Functions ฟรี, Railway ใช้เป็น MySQL Database และ Cloudinary ใช้จัดเก็บรูปภาพสินค้าแทน AWS S3
 
 ---
 
@@ -807,22 +804,7 @@ graph LR
 | Design Tool | Figma, Mermaid (สำหรับ Diagram) |
 | Version Control | Git, GitHub |
 | Testing Approach | User Acceptance Testing (UAT) — Manual Testing |
-| Deployment / Hosting | Vercel (Frontend), Render (Backend), Railway (MySQL Database), Cloudinary (Product Images) — ทั้งหมดใช้ Free Tier |
-
-
----
-
-## 18. แผนการดำเนินงาน 4 สัปดาห์ (Work Plan)
-
-| สัปดาห์ | กิจกรรม | รายละเอียดโดยย่อ |
-|---|---|---|
-| 1 | Analysis & Design | จัดทำ Persona, Use Case, Class Diagram, Sequence Diagram, ER Diagram |
-| 2 | Frontend Development | พัฒนาหน้า Home, Search, Product Detail, Cart ด้วย React.js |
-| 3 | Backend & Database Development | พัฒนา REST API ด้วย Node.js/Express และเชื่อมต่อ MySQL |
-| 4 | Testing & Presentation | ทำ UAT แบบ Manual Testing ทุกฟังก์ชัน และเตรียมนำเสนอผลงาน |
-
----
-
+| Deployment / Hosting | GHPages (Frontend), Vercel (Backend), Railway (MySQL Database), Cloudinary (Product Images) — ทั้งหมดใช้ Free Tier |
 
 ---
 
@@ -839,4 +821,3 @@ graph LR
 
 ### หมายเหตุการนำไปใช้
 เอกสารนี้จัดทำขึ้นเพื่อใช้เป็นข้อมูลอ้างอิงประกอบการกรอกแบบฟอร์มขออนุมัติโครงงานกลุ่ม (หน้า 18) ของวิชา CSI204 โดยเนื้อหาทุกหัวข้อสอดคล้องกับขอบเขตขั้นต่ำของระบบ e-Commerce และข้อกำหนดหัวข้อโครงงานกลุ่มตามเอกสารหน้า 17
-
