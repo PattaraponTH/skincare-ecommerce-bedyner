@@ -1,10 +1,9 @@
 const stockService = require('./stock.service');
-const { findAll } = require('../../config/store');
 
 /**
  * PUT /api/staff/stock/:productId
  */
-const updateStock = (req, res, next) => {
+const updateStock = async (req, res, next) => {
   try {
     const { productId } = req.params;
     const { stockQty } = req.body;
@@ -16,7 +15,7 @@ const updateStock = (req, res, next) => {
       });
     }
 
-    const updated = stockService.updateStock(productId, stockQty);
+    const updated = await stockService.updateStock(productId, stockQty);
     res.json({ success: true, data: updated });
   } catch (err) {
     next(err);
@@ -26,10 +25,9 @@ const updateStock = (req, res, next) => {
 /**
  * GET /api/staff/stock
  */
-const getAllStock = (_req, res, next) => {
+const getAllStock = async (_req, res, next) => {
   try {
-    const products = findAll('products');
-    const stockData = stockService.getAllStock(products);
+    const stockData = await stockService.getAllStock();
     res.json({ success: true, data: stockData, total: stockData.length });
   } catch (err) {
     next(err);

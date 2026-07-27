@@ -186,7 +186,15 @@
 <script src="js/api.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/topbar.js"></script>
-<script src="js/sidebar.js"></script>
+<script src="js/sidebar.js"></script><<<<<<< main
+<script>
+  // ── Role Gate: content.html → เฉพาะ manager ──
+  document.addEventListener('DOMContentLoaded', () => {
+    applyRoleGate(['manager']); // ไม่มีสิทธิ์จะซ่อนเนื้อหาและแสดงการ์ด 🔒
+  });
+</script>
+
 <script src="js/content.js"></script>
+
 </body>
 </html>

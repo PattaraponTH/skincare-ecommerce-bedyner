@@ -1,80 +1,39 @@
 /**
- * In-Memory Mock Data Store — Staff & Manager Backend
+ * MySQL Data Layer — GLOWTIME Staff & Manager Backend
  * ─────────────────────────────────────────────────────────────────
- * โหลดข้อมูลจาก JSON files เข้าหน่วยความจำ (reset เมื่อ restart server)
- * เมื่อพร้อมเชื่อมต่อ MySQL จริง ให้แทนที่ด้วย mysql2 queries
+ * เชื่อมต่อ Railway MySQL ผ่าน mysql2/promise connection pool
+ * แทนที่ Mock JSON in-memory store เดิม
+ * Pattern เดียวกับ customer/backend/src/config/store.js
  * ─────────────────────────────────────────────────────────────────
  */
 
-const path = require('path');
+const mysql = require('mysql2/promise');
 
-// โหลด JSON ทั้งหมดเป็น in-memory arrays
-const db = {
-  users:     require(path.join(__dirname, '../data/users.json')),
-  products:  require(path.join(__dirname, '../data/products.json')),
-  orders:    require(path.join(__dirname, '../data/orders.json')),
-  shipments: require(path.join(__dirname, '../data/shipments.json')),
-};
-
-// ── Helper: generate next ID ──────────────────────────────
-const nextId = (collection) => {
-  if (collection.length === 0) return 1;
-  return Math.max(...collection.map((item) => item.id || 0)) + 1;
-};
-
-// ── Generic CRUD helpers ──────────────────────────────────
-
-/**
- * ค้นหาทั้งหมดใน collection (พร้อม filter เสริม)
- * @param {string} collectionName
- * @param {Function} [filterFn] - optional filter callback
- */
-const findAll = (collectionName, filterFn) => {
-  const col = db[collectionName];
-  return filterFn ? col.filter(filterFn) : [...col];
-};
+// ── Connection Pool ──────────────────────────────────────────────
+const pool = mysql.createPool({
+  host:               process.env.DB_HOST,
+  port:               Number(process.env.DB_PORT) || 3306,
+  user:               process.env.DB_USER,
+  password:           process.env.DB_PASS,
+  database:           process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit:    10,
+  queueLimit:         0,
+  // คืนค่าคอลัมน์ type DATE เป็น string 'YYYY-MM-DD' ตรงๆ แทนที่จะแปลงเป็น JS Date object
+  // (ถ้าไม่ตั้งค่านี้ mysql2 จะตีความเป็น local-midnight แล้วแปลงเป็น UTC ตอน JSON.stringify
+  //  ทำให้วันที่เพี้ยนไป 1 วันเมื่อ server timezone เป็น UTC+ และยังทำให้ <input type="date"> รับค่าไม่ได้)
+  dateStrings: true,
+  // SSL required for Railway external connections
+  ssl: { rejectUnauthorized: false },
+});
 
 /**
- * ค้นหาด้วย id
+ * ทดสอบการเชื่อมต่อ — เรียกใช้ตอน server start
  */
-const findById = (collectionName, id) => {
-  return db[collectionName].find((item) => item.id === id) || null;
+const testConnection = async () => {
+  const conn = await pool.getConnection();
+  await conn.ping();
+  conn.release();
 };
 
-/**
- * ค้นหาด้วย field ใดก็ได้
- */
-const findOne = (collectionName, predicate) => {
-  return db[collectionName].find(predicate) || null;
-};
-
-/**
- * เพิ่มข้อมูลใหม่ (auto-assign id)
- */
-const create = (collectionName, data) => {
-  const newItem = { id: nextId(db[collectionName]), ...data };
-  db[collectionName].push(newItem);
-  return newItem;
-};
-
-/**
- * อัปเดตข้อมูลใน collection ด้วย id
- */
-const update = (collectionName, id, data) => {
-  const index = db[collectionName].findIndex((item) => item.id === id);
-  if (index === -1) return null;
-  db[collectionName][index] = { ...db[collectionName][index], ...data };
-  return db[collectionName][index];
-};
-
-/**
- * ลบข้อมูลออกจาก collection ด้วย id
- */
-const remove = (collectionName, id) => {
-  const index = db[collectionName].findIndex((item) => item.id === id);
-  if (index === -1) return false;
-  db[collectionName].splice(index, 1);
-  return true;
-};
-
-module.exports = { db, findAll, findById, findOne, create, update, remove };
+module.exports = { pool, testConnection };

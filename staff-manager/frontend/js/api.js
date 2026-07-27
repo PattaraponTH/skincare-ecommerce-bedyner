@@ -1,12 +1,19 @@
 /**
- * GLOWTIME — Staff & Admin Frontend API Client (js/api.js)
+ * GLOWTIME — Admin/Staff-Manager Frontend API Client (js/api.js)
  * ─────────────────────────────────────────────────────────────
- * Wrapper รอบ fetch() เพื่อเชื่อมต่อระหว่าง Admin Frontend และ Admin/Staff Backend
- * Base URL: http://localhost:5001 (Staff & Manager Backend)
+ * Wrapper รอบ fetch() เพื่อเชื่อมต่อระหว่าง Admin/Staff-Manager Backend
+ * Base URL: https://glowtime-staff-backend.vercel.app 
  * ─────────────────────────────────────────────────────────────
  */
 
-const ADMIN_API_BASE = 'http://localhost:5001';
+// เลือกปลายทาง API อัตโนมัติ:
+// - เปิดจากเครื่องตัวเอง (localhost) → เรียก backend ในเครื่องที่พอร์ต 5001
+// - เปิดจากเว็บที่ deploy แล้ว → เรียก URL production
+const ADMIN_API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:5001'
+  : 'https://glowtime-staff-backend.vercel.app';
+  
+  
 
 // ── Token & Auth Helpers ─────────────────────────────────────
 const getAdminToken = () => localStorage.getItem('glowtime_token') || sessionStorage.getItem('glowtime_admin_token');
@@ -54,25 +61,19 @@ async function adminApiFetch(path, options = {}) {
 // ── Auth Module ──────────────────────────────────────────────
 const AdminAuth = {
   async login(email, password) {
-    try {
-      const res = await adminApiFetch('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.data?.token) {
-        setAdminToken(res.data.token);
-        if (res.data.user) localStorage.setItem('glowtime_user', JSON.stringify(res.data.user));
-      }
-      sessionStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminLoggedIn', 'true');
-      return res.data;
-    } catch (e) {
-      // Fallback สำหรับกรณีพัฒนา local/offline mock
-      sessionStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminLoggedIn', 'true');
-      return { success: true, message: 'LoggedIn Demo Mode' };
-    }
-  },
+  const res = await adminApiFetch('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  if (res.data?.token) {
+    setAdminToken(res.data.token);
+    if (res.data.user) localStorage.setItem('glowtime_user', JSON.stringify(res.data.user));
+  }
+  sessionStorage.setItem('adminLoggedIn', 'true');
+  localStorage.setItem('adminLoggedIn', 'true');
+  return res.data;
+  // ไม่มี try/catch แล้ว — ถ้า fetch fail หรือรหัสผิด ให้ error โยนขึ้นไปตามปกติ
+},
 
   logout() {
     clearAdminToken();
@@ -96,13 +97,16 @@ const AdminAuth = {
 // ── Admin Products Module ─────────────────────────────────────
 const AdminProducts = {
   async list(filters = {}) {
-    try {
-      const params = new URLSearchParams(filters).toString();
-      const res = await adminApiFetch(`/api/manager/products${params ? '?' + params : ''}`);
-      return res.data;
-    } catch {
-      return null; // fallback ให้หน้า UI ใช้ mock data เดิมถ้าไม่ได้เปิด backend
-    }
+    // หมายเหตุ: ไม่ fallback เป็น mock data อีกต่อไป — ถ้าเชื่อมต่อ backend/Railway MySQL
+    // ไม่ได้ ให้ error หลุดขึ้นไปให้ผู้เรียกใช้ (products.js) จัดการแสดงสถานะ "เชื่อมต่อไม่ได้" เอง
+    const params = new URLSearchParams(filters).toString();
+    const res = await adminApiFetch(`/api/manager/products${params ? '?' + params : ''}`);
+    return res.data;
+  },
+
+  async getById(id) {
+    const res = await adminApiFetch(`/api/manager/products/${id}`);
+    return res.data;
   },
 
   async create(productData) {
@@ -124,6 +128,27 @@ const AdminProducts = {
   async delete(id) {
     const res = await adminApiFetch(`/api/manager/products/${id}`, { method: 'DELETE' });
     return res.data;
+  },
+
+  // อัปโหลดไฟล์รูปจริงขึ้น server (multipart/form-data — ห้ามตั้ง Content-Type: application/json
+  // เหมือน adminApiFetch ทั่วไป ไม่งั้น browser จะไม่ใส่ boundary ให้ ต้องยิง fetch ตรงเอง)
+  async uploadImage(file) {
+    const token = getAdminToken();
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const res = await fetch(`${ADMIN_API_BASE}/api/manager/products/upload-image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const err = new Error(data.message || 'อัปโหลดรูปไม่สำเร็จ');
+      err.status = res.status;
+      throw err;
+    }
+    return data.data; // { imageUrl }
   },
 
   async updateStock(productId, stockQty) {
@@ -183,6 +208,24 @@ const AdminReports = {
       return null;
     }
   },
+
+  async getCategorySales() {
+    try {
+      const res = await adminApiFetch('/api/manager/reports/category-sales');
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async getSkinTypes() {
+    try {
+      const res = await adminApiFetch('/api/manager/reports/skin-types');
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
 };
 
 // ── Admin Users Module ────────────────────────────────────────
@@ -191,6 +234,15 @@ const AdminUsers = {
     try {
       const params = new URLSearchParams(filters).toString();
       const res = await adminApiFetch(`/api/manager/users${params ? '?' + params : ''}`);
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
+
+  async getById(id) {
+    try {
+      const res = await adminApiFetch(`/api/manager/users/${id}`);
       return res.data;
     } catch {
       return null;
@@ -332,6 +384,95 @@ const AdminCoupons = {
   },
 };
 
+
+// ── Admin Marketing / Promotions Module ──────────────────────────
+// Endpoint: /api/manager/promotions (in-memory store)
+const AdminMarketing = {
+  async list() {
+    try { const res = await adminApiFetch('/api/manager/promotions'); return res.data; }
+    catch { return null; } // fallback → marketing.html ใช้ mock
+  },
+  async create(data) {
+    const res = await adminApiFetch('/api/manager/promotions', { method: 'POST', body: JSON.stringify(data) });
+    return res.data;
+  },
+  async update(id, data) {
+    const res = await adminApiFetch(`/api/manager/promotions/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    return res.data;
+  },
+  async delete(id) {
+    const res = await adminApiFetch(`/api/manager/promotions/${id}`, { method: 'DELETE' });
+    return res.data;
+  },
+};
+
+// ── Admin Reviews Module ──────────────────────────────────────
+// Endpoint: /api/manager/reviews (query จาก reviews table ใน DB)
+const AdminReviews = {
+  async list() {
+    try { const res = await adminApiFetch('/api/manager/reviews'); return res.data; }
+    catch { return null; }
+  },
+  async updateStatus(id, status) {
+    const res = await adminApiFetch(`/api/manager/reviews/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }), // approved | rejected | pending
+    });
+    return res.data;
+  },
+};
+
+// ── Admin Settings Module ─────────────────────────────────────
+// Endpoint: /api/manager/settings (in-memory store)
+const AdminSettings = {
+  async get() {
+    try { const res = await adminApiFetch('/api/manager/settings'); return res.data; }
+    catch { return null; }
+  },
+  async update(data) {
+    const res = await adminApiFetch('/api/manager/settings', { method: 'PUT', body: JSON.stringify(data) });
+    return res.data;
+  },
+};
+
+// ── Admin Inventory Module ────────────────────────────────────
+// Endpoint: /api/manager/inventory/lots (สร้างจาก products.expiry_date)
+const AdminInventory = {
+  async getLots() {
+    try { const res = await adminApiFetch('/api/manager/inventory/lots'); return res.data; }
+    catch { return null; }
+  },
+};
+
+// ── Admin Revenue Chart Module ───────────────────────────────
+// Endpoint: /api/manager/reports/revenue?period=7D|30D|1Y
+const AdminRevenueChart = {
+  async get(period = '7D') {
+    if (!['7D','30D','1Y'].includes(period)) period = '7D';
+    try {
+      const res = await adminApiFetch(`/api/manager/reports/revenue?period=${period}`);
+      return res.data;
+    } catch { return null; } // fallback → dashboard.js ใช้ CHART_DATA mock
+  },
+};
+
+// Export to Global Scope
+window.GlowtimeAdminAPI = {
+  Auth:         AdminAuth,
+  Products:     AdminProducts,
+  Orders:       AdminOrders,
+  Reports:      AdminReports,
+  Users:        AdminUsers,
+  Shipments:    AdminShipments,
+  Stock:        AdminStock,
+  Categories:   AdminCategories,
+  Coupons:      AdminCoupons,
+  Marketing:    AdminMarketing,   // ← ใหม่
+  Reviews:      AdminReviews,     // ← ใหม่
+  Settings:     AdminSettings,    // ← ใหม่
+  Inventory:    AdminInventory,   // ← ใหม่
+  RevenueChart: AdminRevenueChart,// ← ใหม่
+
 // Export to Global Scope
 window.GlowtimeAdminAPI = {
   Auth:       AdminAuth,
@@ -343,6 +484,8 @@ window.GlowtimeAdminAPI = {
   Stock:      AdminStock,
   Categories: AdminCategories,
   Coupons:    AdminCoupons,
+
   getAdminToken,
   getAdminUser,
+  apiBase: ADMIN_API_BASE,
 };

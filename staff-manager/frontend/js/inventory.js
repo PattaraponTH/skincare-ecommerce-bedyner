@@ -16,10 +16,13 @@ const MOCK_INVENTORY = [
 
 const LOW_STOCK_THRESHOLD = 30;
 
-document.addEventListener('DOMContentLoaded', async () => {
+// เก็บข้อมูลล่าสุดไว้ระดับโมดูล เพื่อให้ reload หลัง restock ได้โดยไม่ต้องผูก DOMContentLoaded ใหม่
+let _inventoryData = MOCK_INVENTORY;
+
+async function loadInventory() {
   let inventoryData = MOCK_INVENTORY;
 
-  // Try API
+  // Try API — /api/staff/stock (GET)
   if (window.GlowtimeAdminAPI) {
     try {
       const stockData = await window.GlowtimeAdminAPI.Stock.list();
@@ -29,6 +32,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           productId:    p.productId || p.id,
           productName:  p.name,
           category:     p.category,
+
+          // หมายเหตุ: DB จริง (glowtime.sql) ยังไม่มีตาราง batch/lot แยกต่างหาก
+          // ฟิลด์ supplier / costPrice / mfgDate จึงเป็นค่า placeholder ไม่ใช่ข้อมูลจริง
+
           supplier:     'GLOWTIME OEM',
           costPrice:    0,
           qtyReceived:  p.stockQty,
@@ -43,9 +50,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+
+  _inventoryData = inventoryData;
   renderInventoryStats(inventoryData);
   renderInventoryTable(inventoryData);
   setupFilters(inventoryData);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!applyRoleGate(['staff'])) return; // ← /api/staff/stock → staff เท่านั้น
+  await loadInventory();
+
+  renderInventoryStats(inventoryData);
+  renderInventoryTable(inventoryData);
+  setupFilters(inventoryData);
+
 });
 
 // ── Stats ────────────────────────────────────────────────
@@ -150,10 +169,21 @@ function setupFilters(allData) {
 }
 
 // ── Restock Modal ────────────────────────────────────────
+
+let _restockProductId    = null;
+let _restockCurrentStock = 0; // ← เก็บ stock ปัจจุบันไว้ เพราะ backend PUT /api/staff/stock/:id
+                               //   คือ "SET stock_qty = ค่าที่ส่งไป" ไม่ใช่บวกเพิ่ม (UPDATE ... SET stock_qty = ?)
+                               //   ถ้าส่ง addQty ตรงๆ จะเท่ากับ "เซ็ตสต็อกทับ" ไม่ใช่ restock เพิ่ม
+
+function openRestockModal(productId, productName, currentStock) {
+  _restockProductId    = productId;
+  _restockCurrentStock = Number(currentStock) || 0;
+
 let _restockProductId = null;
 
 function openRestockModal(productId, productName, currentStock) {
   _restockProductId = productId;
+
   document.getElementById('restockProductName').textContent = productName;
   document.getElementById('restockCurrentQty').textContent  = currentStock + ' units';
   document.getElementById('restockQty').value = '';
@@ -165,6 +195,26 @@ async function saveRestock(e) {
   const addQty = Number(document.getElementById('restockQty').value);
   if (!addQty || addQty <= 0) return;
 
+
+  // คำนวณสต็อกใหม่ = ของเดิม + จำนวนที่รับเข้า ก่อนส่งให้ backend (backend เซ็ตทับ ไม่ได้บวกให้)
+  const newQty = _restockCurrentStock + addQty;
+
+  if (!window.GlowtimeAdminAPI) {
+    showToast('❌ ไม่พบการเชื่อมต่อ API');
+    return;
+  }
+
+  try {
+    await window.GlowtimeAdminAPI.Stock.update(_restockProductId, newQty); // PUT /api/staff/stock/:productId
+  } catch (err) {
+    showToast('❌ อัปเดตสต็อกไม่สำเร็จ: ' + err.message);
+    return;
+  }
+
+  closeModal('modalRestock');
+  showToast(`✅ Restocked +${addQty} units สำเร็จ (สต็อกใหม่: ${newQty} units)`);
+  await loadInventory(); // ← โหลดตารางใหม่จาก DB ให้ตัวเลขอัปเดตทันที
+
   if (window.GlowtimeAdminAPI) {
     try {
       await window.GlowtimeAdminAPI.Stock.update(_restockProductId, addQty);
@@ -175,4 +225,5 @@ async function saveRestock(e) {
 
   closeModal('modalRestock');
   showToast(`✅ Restocked +${addQty} units successfully`);
+
 }

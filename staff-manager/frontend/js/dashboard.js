@@ -311,12 +311,60 @@ function initDashboardCharts() {
   }
 }
 
+
+// ── Timeframe Filter (API-first + mock fallback) ─────────────
+async function switchTimeframe(period, btn) {
+
 // ── Timeframe Filter ──────────────────────────────────────────
 function switchTimeframe(period, btn) {
   if (!CHART_DATA[period]) return;
+
   _currentPeriod = period;
   document.querySelectorAll('.time-filter-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+
+
+  // เรียก Revenue Chart API ก่อน, fallback mock
+  let data = null;
+  if (window.GlowtimeAdminAPI?.RevenueChart) {
+    try {
+      data = await window.GlowtimeAdminAPI.RevenueChart.get(period);
+    } catch { data = null; }
+  }
+
+  if (data && Array.isArray(data.labels) && data.labels.length > 0) {
+    // ── API ตอบสนอง: ใช้ข้อมูลจริง ──
+    const revEl = document.getElementById('statTotalRevenue');
+    const ordEl = document.getElementById('statTotalOrders');
+    if (revEl) animateCounter(revEl, Number(data.totalRevenue || 0), '฿');
+    if (ordEl) animateCounter(ordEl, Number(data.totalOrders || 0));
+    const revMetaEl = document.getElementById('statTotalRevenueMeta');
+    if (revMetaEl) revMetaEl.textContent = `- (${period})`;
+
+    if (_revenueChart) {
+      _revenueChart.data.labels = data.labels;
+      _revenueChart.data.datasets[0].data = data.revenue;
+      _revenueChart.data.datasets[1].data = data.orders;
+      _revenueChart.update('active');
+    }
+    showToast(`✅ Updated analytics to ${period} view (Live DB)`);
+  } else {
+    // ── Fallback: ใช้ mock data ──
+    const mockData = CHART_DATA[period] || CHART_DATA['7D'];
+    const revEl = document.getElementById('statTotalRevenue');
+    const ordEl = document.getElementById('statTotalOrders');
+    if (revEl) animateCounter(revEl, mockData.totalRevenue, '฿');
+    if (ordEl) animateCounter(ordEl, mockData.totalOrders);
+    const revMetaEl = document.getElementById('statTotalRevenueMeta');
+    if (revMetaEl) revMetaEl.textContent = mockData.statChange;
+    if (_revenueChart) {
+      _revenueChart.data.labels = mockData.labels;
+      _revenueChart.data.datasets[0].data = mockData.revenue;
+      _revenueChart.data.datasets[1].data = mockData.orders;
+      _revenueChart.update('active');
+    }
+    showToast(`Updated analytics to ${period === '7D' ? '7 Days' : period === '30D' ? '30 Days' : '1 Year'} view`);
+  }
 
   const data = CHART_DATA[period];
 
@@ -337,6 +385,7 @@ function switchTimeframe(period, btn) {
     _revenueChart.update('active');
   }
   showToast(`Updated analytics to ${period === '7D' ? '7 Days' : period === '30D' ? '30 Days' : '1 Year'} view`);
+
 }
 
 // ── Render Top Products Table ─────────────────────────────────
@@ -409,6 +458,24 @@ function renderLowStockList(products) {
     return;
   }
 
+
+  el.innerHTML = products.map(p => {
+    const status = p.status || (p.stockQty === 0 ? 'out' : p.stockQty <= 30 ? 'low' : 'ok');
+    const badgeCls  = status === 'out' ? 'badge-danger' : status === 'low' ? 'badge-warning' : 'badge-success';
+    const badgeText = status === 'out' ? 'Out of Stock' : `${p.stockQty} left`;
+    return `
+      <div class="low-stock-item">
+        <div class="low-stock-info">
+          <strong>${p.name}</strong>
+          <span>${p.category} — ${p.brand || 'GLOWTIME'}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <span class="status-badge ${badgeCls}">${badgeText}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
   el.innerHTML = products.map(p => `
     <div class="low-stock-item">
       <div class="low-stock-info">
@@ -422,6 +489,7 @@ function renderLowStockList(products) {
       </div>
     </div>
   `).join('');
+
 }
 
 // ── Inspect Product Modal ─────────────────────────────────────
@@ -492,6 +560,266 @@ function exportChartCSV() {
   const rows = [['Period', 'Revenue (฿)', 'Orders']];
   data.labels.forEach((label, i) => {
     rows.push([label, data.revenue[i] || 0, data.orders[i] || 0]);
+
+  });
+  _downloadCSV(rows, `glowtime-revenue-${_currentPeriod}-${new Date().toISOString().slice(0, 10)}.csv`);
+  showToast('📊 Revenue data exported as CSV');
+}
+
+function exportProductsCSV() {
+  if (!_cachedTopProducts.length) { showToast('No product data to export'); return; }
+  const rows = [['Rank', 'Product Name', 'Category', 'Price (฿)', 'Units Sold', 'Revenue (฿)']];
+  _cachedTopProducts.forEach((p, i) => {
+    rows.push([i + 1, p.productName || p.name, p.category, p.price || 0, p.totalQty || 0, p.totalRevenue || 0]);
+  });
+  _downloadCSV(rows, `glowtime-top-products-${new Date().toISOString().slice(0, 10)}.csv`);
+  showToast('📦 Top products exported as CSV');
+}
+
+function _downloadCSV(rows, filename) {
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Update Category Chart with Real API Data ──────────────────
+const CATEGORY_PALETTE = ['#0A0A0A', '#C5A059', '#8B6F5E', '#4A6741', '#D4C4B7', '#A0856A', '#5C4A3D', '#B08968'];
+
+function updateCategoryChart(data) {
+  if (!_categoryChart || !data || !Array.isArray(data.labels) || data.labels.length === 0) return;
+  const values = Array.isArray(data.percentages) && data.percentages.length ? data.percentages : data.revenue;
+  _categoryChart.data.labels = data.labels;
+  _categoryChart.data.datasets[0].data = values;
+  _categoryChart.data.datasets[0].backgroundColor = data.labels.map((_, i) => CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]);
+  _categoryChart.update('active');
+}
+
+// ── Update Skin Type Chart with Real API Data ─────────────────
+function updateSkinChart(data) {
+  if (!_skinChart || !data || !Array.isArray(data.labels) || data.labels.length === 0) return;
+  _skinChart.data.labels = data.labels;
+  _skinChart.data.datasets[0].data = data.counts;
+  _skinChart.data.datasets[0].backgroundColor = data.labels.map((_, i) => `rgba(197,160,89,${Math.max(0.25, 0.85 - i * 0.15)})`);
+  _skinChart.update('active');
+}
+
+// ── Update Monthly Forecast Chart ──────────────────────────────
+// Actual: ข้อมูลจริงจาก GET /api/manager/reports/revenue?period=1Y
+// Forecast: คำนวณฝั่ง frontend เอง (ไม่มีทางดึงจาก DB เพราะเป็นเดือนอนาคต)
+// โดยใช้ growth rate เฉลี่ยแบบเดือนต่อเดือนจากข้อมูลจริง แล้ว project ต่อไปจนครบ 12 เดือน
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function _shortMonthLabel(ym) {
+  const parts = String(ym).split('-');
+  const idx = parseInt(parts[1], 10) - 1;
+  return MONTH_NAMES[idx] || String(ym);
+}
+
+function updateForecastChart(rawLabels, actualRevenue) {
+  if (!_forecastChart || !Array.isArray(rawLabels) || rawLabels.length === 0) return;
+
+  const actualLabels = rawLabels.map(_shortMonthLabel);
+
+  // Growth rate เฉลี่ยจากข้อมูลจริง (กันค่าสุดโต่งด้วยการ clamp -15% ถึง +25%)
+  let avgGrowth = 0.06;
+  const growthRates = [];
+  for (let i = 1; i < actualRevenue.length; i++) {
+    if (actualRevenue[i - 1] > 0) {
+      growthRates.push((actualRevenue[i] - actualRevenue[i - 1]) / actualRevenue[i - 1]);
+    }
+  }
+  if (growthRates.length > 0) {
+    avgGrowth = growthRates.reduce((a, b) => a + b, 0) / growthRates.length;
+    avgGrowth = Math.max(-0.15, Math.min(0.25, avgGrowth));
+  }
+
+  const forecastMonthsCount = Math.max(0, 12 - actualLabels.length);
+  const lastRaw = String(rawLabels[rawLabels.length - 1]);
+  let [lastYear, lastMonth] = lastRaw.split('-').map(Number);
+  lastYear = lastYear || new Date().getFullYear();
+  lastMonth = lastMonth || (new Date().getMonth() + 1);
+
+  const forecastLabels = [];
+  const forecastValues = [];
+  let lastValue = actualRevenue[actualRevenue.length - 1] || 0;
+
+  for (let i = 0; i < forecastMonthsCount; i++) {
+    lastMonth += 1;
+    if (lastMonth > 12) { lastMonth = 1; lastYear += 1; }
+    lastValue = Math.round(lastValue * (1 + avgGrowth));
+    forecastLabels.push(MONTH_NAMES[lastMonth - 1]);
+    forecastValues.push(lastValue);
+  }
+
+  const allLabels     = [...actualLabels, ...forecastLabels];
+  const actualSeries   = [...actualRevenue, ...new Array(forecastLabels.length).fill(null)];
+  const bridgeValue    = actualRevenue.length ? actualRevenue[actualRevenue.length - 1] : null;
+  const forecastSeries = [
+    ...new Array(Math.max(0, actualLabels.length - 1)).fill(null),
+    bridgeValue,
+    ...forecastValues,
+  ];
+
+  _forecastChart.data.labels = allLabels;
+  _forecastChart.data.datasets[0].data = actualSeries;
+  _forecastChart.data.datasets[1].data = forecastSeries;
+  _forecastChart.update('active');
+}
+
+// ── Load Dashboard from API (with fallback) ───────────────────
+async function loadDashboardFromAPI() {
+  if (!window.GlowtimeAdminAPI) {
+    _loadFallbackData();
+    return;
+  }
+
+  // เรียก API พร้อมกัน (เฉพาะ manager endpoints)
+  const [salesData, stockData, categoryData, skinData, revenue1YData] = await Promise.allSettled([
+    window.GlowtimeAdminAPI.Reports.getSales(),
+    window.GlowtimeAdminAPI.Reports.getStock(),
+    window.GlowtimeAdminAPI.Reports.getCategorySales(),
+    window.GlowtimeAdminAPI.Reports.getSkinTypes(),
+    window.GlowtimeAdminAPI.RevenueChart ? window.GlowtimeAdminAPI.RevenueChart.get('1Y') : Promise.resolve(null),
+  ]);
+
+  // ── Category Chart (โดนัทชาร์ต) — ก่อนหน้านี้เป็น mock data ล้วน ─
+  const categoryReport = categoryData.status === 'fulfilled' ? categoryData.value : null;
+  if (categoryReport) updateCategoryChart(categoryReport);
+
+  // ── Skin Type Chart (บาร์ชาร์ต) — ก่อนหน้านี้เป็น mock data ล้วน ─
+  const skinReport = skinData.status === 'fulfilled' ? skinData.value : null;
+  if (skinReport) updateSkinChart(skinReport);
+
+  // ── Monthly Forecast Chart — Actual จาก API จริง, Forecast คำนวณฝั่ง frontend ─
+  const revenue1Y = revenue1YData.status === 'fulfilled' ? revenue1YData.value : null;
+  if (revenue1Y && Array.isArray(revenue1Y.labels) && revenue1Y.labels.length > 0) {
+    updateForecastChart(revenue1Y.labels, revenue1Y.revenue);
+  }
+
+  // ── Sales Report ─────────────────────────────────────
+  const sales = salesData.status === 'fulfilled' ? salesData.value : null;
+  if (sales) {
+    const revEl     = document.getElementById('statTotalRevenue');
+    const ordEl     = document.getElementById('statTotalOrders');
+    const revMetaEl = document.getElementById('statTotalRevenueMeta');
+    const ordMetaEl = document.getElementById('statTotalOrdersMeta');
+
+    if (revEl) animateCounter(revEl, Number(sales.totalRevenue || 0), '฿');
+    if (ordEl) animateCounter(ordEl, Number(sales.totalOrders || 0));
+    if (revMetaEl) revMetaEl.textContent = '-'; //`Delivered: ${sales.deliveredCount || 0} | Shipping: ${sales.shippingCount || 0}`;
+    if (ordMetaEl) ordMetaEl.textContent = '-'; //`Confirmed: ${sales.confirmedCount || 0}`;
+
+    // Top Products from API
+    if (Array.isArray(sales.topProducts) && sales.topProducts.length > 0) {
+      renderTopProducts(sales.topProducts);
+    } else {
+      renderTopProducts(MOCK_TOP_PRODUCTS);
+    }
+  } else {
+    // Fallback counters from mock
+    const d = CHART_DATA['7D'];
+    const revEl = document.getElementById('statTotalRevenue');
+    const ordEl = document.getElementById('statTotalOrders');
+    if (revEl) animateCounter(revEl, d.totalRevenue, '฿');
+    if (ordEl) animateCounter(ordEl, d.totalOrders);
+    const revMetaEl = document.getElementById('statTotalRevenueMeta');
+    if (revMetaEl) revMetaEl.textContent = d.statChange;
+    renderTopProducts(MOCK_TOP_PRODUCTS);
+  }
+
+  // ── Stock Report ──────────────────────────────────────
+  const stock = stockData.status === 'fulfilled' ? stockData.value : null;
+  if (stock) {
+    const lowStockEl  = document.getElementById('statLowStock');
+    const lowMetaEl   = document.getElementById('statLowStockMeta');
+
+    if (lowStockEl) animateCounter(lowStockEl, Number(stock.lowStockProducts || 0), '', ' Products');
+    if (lowMetaEl) lowMetaEl.textContent = `Out of stock: ${stock.outOfStock || 0} items`;
+
+    // แสดงสต็อกสินค้า "ทุกรายการ" เรียงจากน้อยไปมาก (backend ORDER BY stock_qty ASC ให้แล้ว)
+    const allStockItems = stock.products || [];
+    renderLowStockList(allStockItems.length > 0 ? allStockItems : MOCK_LOW_STOCK);
+  } else {
+    const lowStockEl = document.getElementById('statLowStock');
+    const lowMetaEl  = document.getElementById('statLowStockMeta');
+    if (lowStockEl) animateCounter(lowStockEl, MOCK_LOW_STOCK.length, '', ' Products');
+    if (lowMetaEl) lowMetaEl.textContent = 'Reorder replenishment needed';
+    renderLowStockList(MOCK_LOW_STOCK);
+  }
+
+  // ── Recent Orders ───────────────────────────────────────────
+  // Manager ไม่มีสิทธิ์เรียก /api/staff/orders → ใช้ recentOrders จาก getSales() แทน
+  if (sales && Array.isArray(sales.recentOrders) && sales.recentOrders.length > 0) {
+    renderRecentOrders(sales.recentOrders);
+  } else {
+    renderRecentOrders(MOCK_RECENT_ORDERS);
+  }
+
+  // ── Revenue Chart (initial 7D load) ────────────────────────
+  if (window.GlowtimeAdminAPI?.RevenueChart) {
+    try {
+      const chartData = await window.GlowtimeAdminAPI.RevenueChart.get('7D');
+      if (chartData && Array.isArray(chartData.labels) && chartData.labels.length > 0 && _revenueChart) {
+        _revenueChart.data.labels = chartData.labels;
+        _revenueChart.data.datasets[0].data = chartData.revenue;
+        _revenueChart.data.datasets[1].data = chartData.orders;
+        _revenueChart.update('active');
+      }
+    } catch { /* use chart.js initialized data */ }
+  }
+
+  // ── Customers count ───────────────────────────────────
+  const custEl     = document.getElementById('statTotalCustomers');
+  const custMetaEl = document.getElementById('statTotalCustomersMeta');
+  try {
+    const usersData = await window.GlowtimeAdminAPI.Users.list({ role: 'customer' });
+    const count = Array.isArray(usersData) ? usersData.length : (usersData?.total || 1102);
+    if (custEl) animateCounter(custEl, count);
+    if (custMetaEl) custMetaEl.textContent = `-`;
+  } catch {
+    if (custEl) animateCounter(custEl, 1102);
+    if (custMetaEl) custMetaEl.textContent = '▲ +18 members this week';
+  }
+}
+
+function _loadFallbackData() {
+  const d = CHART_DATA['7D'];
+  animateCounter(document.getElementById('statTotalRevenue'), d.totalRevenue, '฿');
+  animateCounter(document.getElementById('statTotalOrders'),  d.totalOrders);
+  animateCounter(document.getElementById('statTotalCustomers'), 1102);
+  animateCounter(document.getElementById('statLowStock'), MOCK_LOW_STOCK.length, '', ' Products');
+
+  const revMetaEl  = document.getElementById('statTotalRevenueMeta');
+  const ordMetaEl  = document.getElementById('statTotalOrdersMeta');
+  const custMetaEl = document.getElementById('statTotalCustomersMeta');
+  const lowMetaEl  = document.getElementById('statLowStockMeta');
+
+  if (revMetaEl)  revMetaEl.textContent  = d.statChange;
+  if (ordMetaEl)  ordMetaEl.textContent  = '▲ +42 orders today';
+  if (custMetaEl) custMetaEl.textContent = '▲ +18 members this week';
+  if (lowMetaEl)  lowMetaEl.textContent  = 'Reorder replenishment needed';
+
+  renderTopProducts(MOCK_TOP_PRODUCTS);
+  renderRecentOrders(MOCK_RECENT_ORDERS);
+  renderLowStockList(MOCK_LOW_STOCK);
+}
+
+// ── DOM Load Trigger ────────────────────────────────────────────
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!applyRoleGate(['manager'])) return; // ← เช็คสิทธิ์ก่อน
+    initDashboardCharts();
+    loadDashboardFromAPI();
+  });
+} else {
+  if (applyRoleGate(['manager'])) { // ← เช็คสิทธิ์ก่อน
+    initDashboardCharts();
+    loadDashboardFromAPI();
+  }
+
   });
   _downloadCSV(rows, `glowtime-revenue-${_currentPeriod}-${new Date().toISOString().slice(0, 10)}.csv`);
   showToast('📊 Revenue data exported as CSV');
@@ -626,4 +954,5 @@ if (document.readyState === 'loading') {
 } else {
   initDashboardCharts();
   loadDashboardFromAPI();
+
 }

@@ -116,17 +116,12 @@
         <button class="btn-dark-sm" onclick="openAddProductModal()">+ Add New Product</button>
       </div>
 
-      <div class="filter-row">
-        <button class="btn-dark-sm" onclick="filterProducts('all')">All Products (9)</button>
-        <button class="btn-ghost-sm" onclick="filterProducts('Serum')">Serum</button>
-        <button class="btn-ghost-sm" onclick="filterProducts('Moisturizer')">Moisturizer</button>
-        <button class="btn-ghost-sm" onclick="filterProducts('Oil')">Oil</button>
-        <button class="btn-ghost-sm" onclick="filterProducts('Cleanser')">Cleanser</button>
-        <button class="btn-ghost-sm" onclick="filterProducts('Mist')">Mist</button>
-        <button class="btn-ghost-sm" onclick="filterProducts('Mask')">Mask</button>
-        <button class="btn-ghost-sm" onclick="filterProducts('Sunscreen')">Sunscreen</button>
-        <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="filterProducts('low_stock')">Low Stock (<10)</button>
+      <div class="filter-row" id="categoryFilterRow">
+        <!-- ปุ่ม "All Products" + ปุ่ม category แต่ละอันถูกสร้างแบบ dynamic จาก GET /api/manager/categories
+             ใน js/products.js (renderCategoryTabs) เพื่อให้ตรงกับฐานข้อมูลจริงเสมอ ไม่ฮาร์ดโค้ด -->
       </div>
+
+      <div id="productsStatusBanner" style="display:none; margin-bottom:1rem; padding:0.8rem 1rem; border-radius:6px; background:#FDEDEC; color:var(--status-danger); font-size:0.85rem;"></div>
 
       <div class="table-responsive">
         <table class="data-table">
@@ -193,13 +188,7 @@
         <div class="form-group">
           <label>Category <span style="color:var(--status-danger);">*</span></label>
           <select class="form-control" id="newProdCat">
-            <option value="Serum">Serum</option>
-            <option value="Moisturizer">Moisturizer</option>
-            <option value="Cleanser">Cleanser</option>
-            <option value="Sunscreen">Sunscreen</option>
-            <option value="Oil">Oil</option>
-            <option value="Mist">Mist</option>
-            <option value="Mask">Mask</option>
+            <!-- option ถูกเติมแบบ dynamic จาก GET /api/manager/categories ใน js/products.js (renderCategorySelectOptions) -->
           </select>
         </div>
         <div class="form-group">

@@ -3,10 +3,10 @@ const shipmentService = require('./shipment.service');
 /**
  * POST /api/staff/shipments
  */
-const createShipment = (req, res, next) => {
+const createShipment = async (req, res, next) => {
   try {
     const { orderId, trackingNumber, carrier } = req.body;
-    const shipment = shipmentService.createShipment({ orderId, trackingNumber, carrier });
+    const shipment = await shipmentService.createShipment({ orderId, trackingNumber, carrier });
     res.status(201).json({ success: true, data: shipment });
   } catch (err) {
     next(err);
@@ -16,9 +16,9 @@ const createShipment = (req, res, next) => {
 /**
  * GET /api/staff/shipments
  */
-const getAllShipments = (_req, res, next) => {
+const getAllShipments = async (_req, res, next) => {
   try {
-    const shipments = shipmentService.getAllShipments();
+    const shipments = await shipmentService.getAllShipments();
     res.json({ success: true, data: shipments, total: shipments.length });
   } catch (err) {
     next(err);
@@ -28,9 +28,9 @@ const getAllShipments = (_req, res, next) => {
 /**
  * GET /api/staff/shipments/:orderId
  */
-const getShipmentByOrderId = (req, res, next) => {
+const getShipmentByOrderId = async (req, res, next) => {
   try {
-    const shipment = shipmentService.getShipmentByOrderId(req.params.orderId);
+    const shipment = await shipmentService.getShipmentByOrderId(req.params.orderId);
     res.json({ success: true, data: shipment });
   } catch (err) {
     next(err);

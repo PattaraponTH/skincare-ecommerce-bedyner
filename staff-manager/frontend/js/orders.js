@@ -91,6 +91,7 @@ const statusBadgeMap = {
 
 // ── Load Orders from Backend ──────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!applyRoleGate(['staff'])) return; // ← เช็คสิทธิ์ก่อน
   await loadOrdersFromBackend();
 });
 
@@ -100,6 +101,36 @@ async function loadOrdersFromBackend() {
       const apiOrders = await window.GlowtimeAdminAPI.Orders.list();
       if (apiOrders && apiOrders.length > 0) {
         ordersList = apiOrders;
+
+        // DB มี 2 คำสำหรับ "รอชำระเงิน" ปนกันอยู่: 'pending' (จาก seed data เดิมใน
+        // glowtime.sql) กับ 'pending_payment' (จาก checkout จริงฝั่งลูกค้า/customer backend)
+        // ทำให้ตัวนับ (4) กับตารางที่กรอง (3) ไม่ตรงกัน — normalize ให้เหลือค่าเดียว
+        // ตั้งแต่ตรงนี้ เพื่อให้ badge/tab/filter/table สอดคล้องกันทั้งหน้า
+        ordersList.forEach((o) => {
+          if (o.status === 'pending') o.status = 'pending_payment';
+        });
+
+        // ดึงข้อมูลการจัดส่งทั้งหมด (GET /api/staff/shipments) แล้ว merge เข้ากับ order
+        // ที่ตรง order_id — เดิม orders.js ไม่เคยเรียก endpoint นี้เลย ทำให้ trackingNo/
+        // deliveredAt หายไปทุกครั้งที่โหลดหน้าใหม่ ทั้งๆ ที่มีข้อมูลจริงในตาราง shipments
+        try {
+          const shipments = await window.GlowtimeAdminAPI.Shipments.list();
+          if (Array.isArray(shipments)) {
+            const shipmentByOrderId = {};
+            shipments.forEach(s => { shipmentByOrderId[String(s.orderId)] = s; });
+            ordersList.forEach(o => {
+              const s = shipmentByOrderId[String(o.id)];
+              if (s) {
+                o.trackingNo   = s.trackingNumber || o.trackingNo;
+                o.carrier      = s.carrier || o.carrier;
+                o.shippedAt    = s.shippedAt || o.shippedAt;
+                o.deliveredAt  = s.deliveredAt || o.deliveredAt;
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('[orders.js] ดึงข้อมูล GET /api/staff/shipments ไม่สำเร็จ:', e.message);
+        }
       }
     } catch (e) {
       console.warn('[orders.js] ใช้ mock data เนื่องจาก backend ไม่ตอบสนอง:', e.message);
@@ -111,15 +142,18 @@ async function loadOrdersFromBackend() {
 
 // ── Counter & Badge Update ────────────────────────────────────
 function updateCounters() {
-  const total    = ordersList.length;
-  const pending  = ordersList.filter(o => o.status === 'pending_payment' || o.status === 'pending').length;
-  const active   = ordersList.filter(o => !['delivered', 'completed', 'cancelled'].includes(o.status)).length;
+  const total     = ordersList.length;
+  const pending   = ordersList.filter(o => o.status === 'pending_payment' || o.status === 'pending').length;
+  const confirmed = ordersList.filter(o => o.status === 'confirmed').length;
+  const shipping  = ordersList.filter(o => o.status === 'shipping').length;
+  const delivered = ordersList.filter(o => o.status === 'delivered').length;
+  const active    = ordersList.filter(o => !['delivered', 'completed', 'cancelled'].includes(o.status)).length;
 
   // Header badge
   const activeBadge = document.getElementById('activeOrdersBadge');
   if (activeBadge) activeBadge.textContent = `${active} Active Orders`;
 
-  // Filter buttons label
+  // Filter buttons label — ทุกแท็บนับจาก ordersList จริง (จาก /api/staff/orders) ไม่ใช่ mockdata
   const allBtn = document.getElementById('btnFilterAll');
   if (allBtn) allBtn.textContent = `All Orders (${total})`;
 
@@ -127,6 +161,16 @@ function updateCounters() {
   if (pendingBtn) {
     pendingBtn.textContent = `⏳ Pending Payment${pending > 0 ? ` (${pending})` : ''}`;
   }
+
+  // เดิม 3 แท็บนี้ไม่เคยถูกอัปเดตเลย (ค้างข้อความ static ใน HTML ไม่มีตัวเลขติด)
+  const confirmedBtn = document.getElementById('btnFilterConfirmed');
+  if (confirmedBtn) confirmedBtn.textContent = `Confirmed / Paid (${confirmed})`;
+
+  const shippingBtn = document.getElementById('btnFilterShipping');
+  if (shippingBtn) shippingBtn.textContent = `Shipping / In Transit (${shipping})`;
+
+  const deliveredBtn = document.getElementById('btnFilterDelivered');
+  if (deliveredBtn) deliveredBtn.textContent = `Delivered (${delivered})`;
 }
 
 // ── Render Table ──────────────────────────────────────────────
@@ -195,10 +239,27 @@ function capitalize(s) {
 }
 
 // ── Order Detail Modal ────────────────────────────────────────
-function openOrderDetail(ordId) {
+async function openOrderDetail(ordId) {
   activeSelectedOrderId = ordId;
   const ord = ordersList.find(o => o.orderId === ordId);
   if (!ord) return;
+
+  // ดึงข้อมูลการจัดส่งล่าสุดของออเดอร์นี้โดยเฉพาะ (GET /api/staff/shipments/:orderId)
+  // เผื่อกรณีเพิ่งบันทึกการจัดส่ง/mark delivered ไปแล้วแต่ยังไม่ reload หน้าใหม่
+  if (window.GlowtimeAdminAPI) {
+    try {
+      const shipment = await window.GlowtimeAdminAPI.Shipments.getByOrderId(ord.id);
+      if (shipment) {
+        ord.trackingNo  = shipment.trackingNumber || ord.trackingNo;
+        ord.carrier     = shipment.carrier || ord.carrier;
+        ord.shippedAt   = shipment.shippedAt || ord.shippedAt;
+        ord.deliveredAt = shipment.deliveredAt || ord.deliveredAt;
+      }
+    } catch (e) {
+      // ยังไม่มีข้อมูลการจัดส่ง (เช่น order ยัง pending/confirmed อยู่) — ไม่ใช่ error ร้ายแรง
+      console.warn('[orders.js] ไม่มีข้อมูลการจัดส่งสำหรับออเดอร์นี้:', e.message);
+    }
+  }
 
   const titleEl = document.getElementById('modalOrdId');
   const infoEl = document.getElementById('modalCustomerInfo');
@@ -309,7 +370,10 @@ function openOrderDetail(ordId) {
 function formatDateTime(isoString) {
   if (!isoString) return '-';
   try {
-    return new Date(isoString).toLocaleString('th-TH', {
+    // mysql2 คืนค่า DATETIME เป็น string 'YYYY-MM-DD HH:MM:SS' (มี space คั่น) ตอนนี้
+    // (เพราะตั้ง dateStrings:true ที่ backend) — แปลง space เป็น 'T' เพื่อให้ Date() parse ได้ชัวร์ทุก browser
+    const normalized = typeof isoString === 'string' ? isoString.replace(' ', 'T') : isoString;
+    return new Date(normalized).toLocaleString('th-TH', {
       year: 'numeric', month: 'short', day: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
@@ -395,12 +459,19 @@ async function updateOrderStatus(newStatus) {
   const ord = ordersList.find(o => o.orderId === activeSelectedOrderId);
   if (!ord) return;
 
+  // backend (staff-manager) รับแค่ 'pending' ไม่รับ 'pending_payment'
+  // (ORDER_STATUSES ฝั่ง staff = ['pending','confirmed','shipping','delivered'])
+  // ส่วน 'pending_payment' เป็นคำที่ frontend ใช้แสดงผล/กรองแท็บเท่านั้น
+  const backendStatus = newStatus === 'pending_payment' ? 'pending' : newStatus;
+
   try {
-    if (window.GlowtimeAdminAPI) {
-      await window.GlowtimeAdminAPI.Orders.updateStatus(ord.id, newStatus);
-    }
+    if (!window.GlowtimeAdminAPI) throw new Error('ไม่พบการเชื่อมต่อ API');
+    await window.GlowtimeAdminAPI.Orders.updateStatus(ord.id, backendStatus);
   } catch (e) {
-    console.warn('[orders.js] updateOrderStatus backend error:', e.message);
+    // เดิมกลืน error แล้วอัปเดต local state ต่อ ทำให้ toast ขึ้นว่าสำเร็จทั้งที่ backend
+    // อาจ reject ไปแล้ว (เช่น "ห้ามย้อนสถานะกลับ") — ตอนนี้หยุดทันทีถ้า backend ล้มเหลว
+    showToast(`❌ อัปเดตสถานะไม่สำเร็จ: ${e.message}`);
+    return;
   }
 
   ord.status = newStatus;
@@ -410,5 +481,5 @@ async function updateOrderStatus(newStatus) {
   updateCounters();
   applyFilter(currentFilterStatus);
   openOrderDetail(activeSelectedOrderId);
-  showToast(`อัปเดตคำสั่งซื้อ ${ord.orderId} → "${newStatus}" แล้ว`);
+  showToast(`✅ อัปเดตคำสั่งซื้อ ${ord.orderId} → "${newStatus}" แล้ว`);
 }

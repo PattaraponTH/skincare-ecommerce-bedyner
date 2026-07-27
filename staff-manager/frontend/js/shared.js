@@ -58,13 +58,25 @@ async function handleAdminLogin(e) {
   const userEl = document.getElementById('adminUser');
   const passEl = document.getElementById('adminPass');
 
-  const username = userEl ? userEl.value.trim().toLowerCase() : 'admin';
+  const username = userEl ? userEl.value.trim().toLowerCase() : '';
   const password = passEl ? passEl.value.trim() : '';
+
+  if (!window.GlowtimeAdminAPI) {
+    showToast('❌ ไม่พบการเชื่อมต่อ API');
+    return;
+  }
+
+  try {
+    await window.GlowtimeAdminAPI.Auth.login(username, password); // ← ถ้ารหัสผิดจะ throw ตรงนี้
+  } catch (err) {
+    showToast('❌ อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    return; // ← หยุดทันที ไม่ set adminLoggedIn
+  }
 
   const matchedAccount = ADMIN_ACCOUNTS[username] || {
     avatar: username.substring(0,2).toUpperCase(),
     name: username.charAt(0).toUpperCase() + username.slice(1),
-    email: `${username}@skincareshop.com`,
+    email: username,
     role: 'super_admin',
     roleTitle: 'Administrator',
     badgeClass: 'badge-success',
@@ -72,24 +84,13 @@ async function handleAdminLogin(e) {
   };
 
   localStorage.setItem('glowtime_current_admin', JSON.stringify(matchedAccount));
-  localStorage.setItem('adminLoggedIn', 'true');
-  sessionStorage.setItem('adminLoggedIn', 'true');
   document.documentElement.classList.add('admin-logged-in');
 
-  if (window.GlowtimeAdminAPI) {
-    try {
-      await window.GlowtimeAdminAPI.Auth.login(username, password);
-    } catch (err) {
-      console.warn('[Shared] Login API fallback:', err);
-    }
-  }
-
-  // Refresh topbar & sidebar
   if (typeof renderAdminTopbar === 'function') renderAdminTopbar();
   if (typeof renderAdminSidebar === 'function') renderAdminSidebar();
 
   updateAuthOverlayState();
-  showToast(`Successfully signed in as ${matchedAccount.name} (${matchedAccount.roleTitle})`);
+  showToast(`Successfully signed in as ${matchedAccount.name}`);
 }
 
 function lockAdminSession() {
@@ -178,9 +179,64 @@ function showToast(message) {
   }, 3000);
 }
 
-// ── Global Search Utility ───────────────────────────────────
+// ── Global Search Utility ───────────────────────────────────────
 function globalSearch(query) {
   if (query && query.length > 2) {
     showToast(`กำลังค้นหา "${query}"...`);
   }
+}
+
+// ── Role Gate (เช็คสิทธิ์ก่อนโหลดทุกหน้า) ───────────────────────
+/**
+ * applyRoleGate(allowedRoles)
+ * ─────────────────────────────────────────────────────────────────
+ * เรียกเป็นบรรทัดแรกใน DOMContentLoaded ของทุกหน้าที่ผูก role
+ *
+ * @param {string[]} allowedRoles  เช่น ['manager'] หรือ ['staff']
+ * @returns {boolean}  true = มีสิทธิ์ / false = ไม่มีสิทธิ์ (หน้าถูกล็อกแล้ว)
+ *
+ * กรณีไม่มีสิทธิ์:
+ *   - ซ่อนทุก element ใน .main-content ยกเว้น .topbar
+ *   - แทรก content-card แสดง "🔒 ไม่มีสิทธิ์เข้าถึงหน้านี้"
+ *   - ไม่ยิง fetch / ไม่ render mock data ใดๆ
+ */
+function applyRoleGate(allowedRoles) {
+  const api = window.GlowtimeAdminAPI;
+  const role = api?.Auth?.currentUser?.()?.role ?? null;
+
+  const allowed = Array.isArray(allowedRoles) && role && allowedRoles.includes(role);
+  if (allowed) return true;
+
+  // ── ไม่มีสิทธิ์: ซ่อนเนื้อหาทั้งหมด ยกเว้น topbar ──
+  const main = document.querySelector('.main-content');
+  if (main) {
+    // ซ่อนทุก child ยกเว้น .topbar
+    Array.from(main.children).forEach(el => {
+      if (!el.classList.contains('topbar')) {
+        el.style.display = 'none';
+      }
+    });
+
+    // แทรกการ์ด "ไม่มีสิทธิ์"
+    const card = document.createElement('div');
+    card.className = 'content-card';
+    card.style.cssText = 'margin:2rem; padding:3rem 2rem; text-align:center;';
+
+    const roleLabel = role
+      ? `คุณ login ด้วย role <strong>${role}</strong>`
+      : 'คุณยังไม่ได้ login';
+    const needLabel = allowedRoles.map(r => `<code>${r}</code>`).join(' / ');
+
+    card.innerHTML = `
+      <div style="font-size:3rem; margin-bottom:1rem;">🔒</div>
+      <h3 style="margin:0 0 0.5rem; font-size:1.2rem;">ไม่มีสิทธิ์เข้าถึงหน้านี้</h3>
+      <p style="color:var(--gray); font-size:0.85rem; margin:0 0 1.5rem;">
+        ${roleLabel} — หน้านี้อนุญาตเฉพาะ role ${needLabel} เท่านั้น
+      </p>
+      <a href="index.html" class="btn-dark-sm">← กลับ Dashboard</a>
+    `;
+    main.appendChild(card);
+  }
+
+  return false;
 }

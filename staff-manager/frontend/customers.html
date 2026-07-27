@@ -297,6 +297,17 @@ function viewCustomer(id) {
   openModal('modalCustomer');
 }
 
+
+<script src="js/api.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/topbar.js"></script>
+<script src="js/sidebar.js"></script>
+<script>
+  // ── Role Gate: customers.html → เฉพาะ manager ──
+  document.addEventListener('DOMContentLoaded', () => {
+    applyRoleGate(['manager']); // ไม่มีสิทธิ์จะซ่อนเนื้อหาและแสดงการ์ด 🔒
+  });
+
 function approveCustomerReview(id) {
   const statusEl = document.getElementById(`custReviewStatus-${id}`);
   const actionEl = document.getElementById(`custReviewAction-${id}`);

@@ -1,3 +1,4 @@
+const path         = require('path');
 const express      = require('express');
 const cors         = require('cors');
 const swaggerUi    = require('swagger-ui-express');
@@ -10,6 +11,12 @@ const stockRouter    = require('./modules/stock/stock.router');
 const productRouter  = require('./modules/products/product.router');
 const reportRouter   = require('./modules/reports/report.router');
 const userRouter     = require('./modules/users/user.router');
+const categoryRouter  = require('./modules/categories/category.router');
+const couponRouter    = require('./modules/coupons/coupon.router');
+const marketingRouter = require('./modules/marketing/marketing.router');
+const reviewRouter    = require('./modules/reviews/review.router');
+const settingsRouter  = require('./modules/settings/settings.router');
+const inventoryRouter = require('./modules/inventory/inventory.router');
 
 const errorHandler = require('./middlewares/error.middleware');
 
@@ -23,6 +30,9 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// ── Static files: รูปสินค้าที่อัปโหลดจริงผ่าน /api/manager/products/upload-image ──
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ── Swagger UI ─────────────────────────────────────────────
 app.use(
@@ -82,7 +92,7 @@ app.get('/api/health', (_req, res) => {
     status:    'ok',
     service:   'GLOWTIME Staff & Manager Backend',
     version:   '1.0.0',
-    dataMode:  'Mock JSON (in-memory)',
+    dataMode:  'Railway MySQL (Live DB)',
     roles:     'staff | manager',
     timestamp: new Date().toISOString(),
   });
@@ -101,19 +111,16 @@ app.use('/api/staff/stock',       stockRouter);
 app.use('/api/manager/products',  productRouter);
 app.use('/api/manager/reports',   reportRouter);
 app.use('/api/manager/users',     userRouter);
-
-// ── Serve Staff/Manager Frontend (static) ──────────────────
-// เปิด http://localhost:5001/ ได้เลย
-app.use(express.static(require('path').join(__dirname, '../../frontend')));
+app.use('/api/manager/categories',  categoryRouter);
+app.use('/api/manager/coupons',     couponRouter);
+app.use('/api/manager/promotions',  marketingRouter);
+app.use('/api/manager/reviews',     reviewRouter);
+app.use('/api/manager/settings',    settingsRouter);
+app.use('/api/manager/inventory',   inventoryRouter);
 
 // ── 404 Handler (API routes only) ──────────────────────────
 app.use('/api', (_req, res) => {
   res.status(404).json({ success: false, message: 'API route not found' });
-});
-
-// ── Fallback: serve frontend for all non-API routes ─────────
-app.get('*', (_req, res) => {
-  res.sendFile(require('path').join(__dirname, '../../frontend/index.html'));
 });
 
 // ── Global Error Handler ───────────────────────────────────
