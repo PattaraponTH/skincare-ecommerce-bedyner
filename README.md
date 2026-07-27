@@ -412,13 +412,15 @@ sequenceDiagram
 
 ### 🎨 UI/UX Design (Figma)
 
-* **Customers:** 
-  [![Wireframe/Prototype](https://img.shields.io/badge/Figma-Wireframe%20%26%20Prototype-F24E1E?style=flat-square&logo=figma&logoColor=white)](https://www.figma.com/design/yh1TgiYnqtnL4t2I1j0Bpw/wireframe-prototype-customers?node-id=0-1&t=EhBTemZMMOXc01CZ-1)
+### 🎨 Figma Designs
 
-* **Staff & Admin:** 
-  [![Wireframe](https://img.shields.io/badge/Figma-Wireframe-0ACF83?style=flat-square&logo=figma&logoColor=white)](https://www.figma.com/design/rD2No3Bt6Rz36HQambVqyj/Admin-Page-Wireframe?node-id=0-1&t=iQZUZjznUiNK0k5u-1)
-  [![Prototype](https://img.shields.io/badge/Figma-Prototype-a259ff?style=flat-square&logo=figma&logoColor=white)](https://www.figma.com/design/tWph3aiBJfKA9EdTEexGVK/Admin-Page-Prototype?node-id=0-1&t=P5oAiAlC4Xjuqzqn-1)
+* **Customers:**  
+  [![Wireframe & Prototype](https://img.shields.io/badge/Figma-Wireframe%20%26%20Prototype-F24E1E?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/yh1TgiYnqtnL4t2I1j0Bpw/wireframe-prototype-customers?node-id=0-1&t=EhBTemZMMOXc01CZ-1)
 
+* **Staff / Admin:**  
+  [![Wireframe](https://img.shields.io/badge/Figma-Wireframe-0A84FF?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/rD2No3Bt6Rz36HQambVqyj/Admin-Page-Wireframe?node-id=0-1&t=iQZUZjznUiNK0k5u-1)
+  [![Prototype](https://img.shields.io/badge/Figma-Prototype-30D158?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/tWph3aiBJfKA9EdTEexGVK/Admin-Page-Prototype?node-id=0-1&t=P5oAiAlC4Xjuqzqn-1)
+  
 ---
 
 ## 11. System Architecture
