@@ -28,7 +28,7 @@ function renderAdminSidebar() {
     'content.html':    ['manager'],
     'marketing.html':  ['manager'],
     'coupons.html':    ['manager'],
-    'settings.html':   ['manager'],
+    'settings.html':   ['manager', 'staff'],
     'users.html':      ['manager'],
   };
 
