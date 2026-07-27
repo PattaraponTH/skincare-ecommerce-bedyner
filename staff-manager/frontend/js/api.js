@@ -1,18 +1,19 @@
 /**
- * GLOWTIME — Staff & Admin Frontend API Client (js/api.js)
+ * GLOWTIME — Admin/Staff-Manager Frontend API Client (js/api.js)
  * ─────────────────────────────────────────────────────────────
- * Wrapper รอบ fetch() เพื่อเชื่อมต่อระหว่าง Admin Frontend และ Admin/Staff Backend
- * Base URL: http://localhost:5001 (Staff & Manager Backend)
+ * Wrapper รอบ fetch() เพื่อเชื่อมต่อระหว่าง Admin/Staff-Manager Backend
+ * Base URL: https://glowtime-staff-backend.vercel.app 
  * ─────────────────────────────────────────────────────────────
  */
 
-// ── API Base URL (auto-detect: Vercel prod vs localhost dev) ──
-const ADMIN_API_BASE = (() => {
-  const h = window.location.hostname;
-  if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5001';
-  // GitHub Pages — ใช้ Vercel backend URL (update เมื่อ deploy จริง)
-  return 'https://glowtime-staff-backend.vercel.app';
-})();
+// เลือกปลายทาง API อัตโนมัติ:
+// - เปิดจากเครื่องตัวเอง (localhost) → เรียก backend ในเครื่องที่พอร์ต 5001
+// - เปิดจากเว็บที่ deploy แล้ว → เรียก URL production
+const ADMIN_API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:5001'
+  : 'https://glowtime-staff-backend.vercel.app';
+  
+  
 
 // ── Token & Auth Helpers ─────────────────────────────────────
 const getAdminToken = () => localStorage.getItem('glowtime_token') || sessionStorage.getItem('glowtime_admin_token');
