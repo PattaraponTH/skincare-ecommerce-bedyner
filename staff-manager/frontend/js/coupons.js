@@ -38,7 +38,10 @@ const usageHistory = [
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
+
   if (!applyRoleGate(['manager'])) return; // ← เช็คสิทธิ์ก่อน
+
+
   // API-first: ลองดึงข้อมูลจาก backend ก่อน ถ้าไม่มีค่อย fallback mock
   if (window.GlowtimeAdminAPI) {
     try {

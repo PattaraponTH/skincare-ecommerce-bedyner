@@ -311,11 +311,18 @@ function initDashboardCharts() {
   }
 }
 
+
 // ── Timeframe Filter (API-first + mock fallback) ─────────────
 async function switchTimeframe(period, btn) {
+
+// ── Timeframe Filter ──────────────────────────────────────────
+function switchTimeframe(period, btn) {
+  if (!CHART_DATA[period]) return;
+
   _currentPeriod = period;
   document.querySelectorAll('.time-filter-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+
 
   // เรียก Revenue Chart API ก่อน, fallback mock
   let data = null;
@@ -358,6 +365,27 @@ async function switchTimeframe(period, btn) {
     }
     showToast(`Updated analytics to ${period === '7D' ? '7 Days' : period === '30D' ? '30 Days' : '1 Year'} view`);
   }
+
+  const data = CHART_DATA[period];
+
+  // Update stat cards with animation
+  const revEl = document.getElementById('statTotalRevenue');
+  const ordEl = document.getElementById('statTotalOrders');
+  if (revEl) animateCounter(revEl, data.totalRevenue, '฿');
+  if (ordEl) animateCounter(ordEl, data.totalOrders);
+
+  const revMetaEl = document.getElementById('statTotalRevenueMeta');
+  if (revMetaEl) revMetaEl.textContent = data.statChange;
+
+  // Update Revenue chart
+  if (_revenueChart) {
+    _revenueChart.data.labels = data.labels;
+    _revenueChart.data.datasets[0].data = data.revenue;
+    _revenueChart.data.datasets[1].data = data.orders;
+    _revenueChart.update('active');
+  }
+  showToast(`Updated analytics to ${period === '7D' ? '7 Days' : period === '30D' ? '30 Days' : '1 Year'} view`);
+
 }
 
 // ── Render Top Products Table ─────────────────────────────────
@@ -430,6 +458,7 @@ function renderLowStockList(products) {
     return;
   }
 
+
   el.innerHTML = products.map(p => {
     const status = p.status || (p.stockQty === 0 ? 'out' : p.stockQty <= 30 ? 'low' : 'ok');
     const badgeCls  = status === 'out' ? 'badge-danger' : status === 'low' ? 'badge-warning' : 'badge-success';
@@ -446,6 +475,21 @@ function renderLowStockList(products) {
       </div>
     `;
   }).join('');
+
+  el.innerHTML = products.map(p => `
+    <div class="low-stock-item">
+      <div class="low-stock-info">
+        <strong>${p.name}</strong>
+        <span>${p.category} — ${p.brand || 'GLOWTIME'}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.6rem;">
+        <span class="status-badge ${p.stockQty === 0 ? 'badge-danger' : 'badge-warning'}">
+          ${p.stockQty === 0 ? 'Out of Stock' : `${p.stockQty} left`}
+        </span>
+      </div>
+    </div>
+  `).join('');
+
 }
 
 // ── Inspect Product Modal ─────────────────────────────────────
@@ -516,6 +560,7 @@ function exportChartCSV() {
   const rows = [['Period', 'Revenue (฿)', 'Orders']];
   data.labels.forEach((label, i) => {
     rows.push([label, data.revenue[i] || 0, data.orders[i] || 0]);
+
   });
   _downloadCSV(rows, `glowtime-revenue-${_currentPeriod}-${new Date().toISOString().slice(0, 10)}.csv`);
   showToast('📊 Revenue data exported as CSV');
@@ -774,4 +819,140 @@ if (document.readyState === 'loading') {
     initDashboardCharts();
     loadDashboardFromAPI();
   }
+
+  });
+  _downloadCSV(rows, `glowtime-revenue-${_currentPeriod}-${new Date().toISOString().slice(0, 10)}.csv`);
+  showToast('📊 Revenue data exported as CSV');
+}
+
+function exportProductsCSV() {
+  if (!_cachedTopProducts.length) { showToast('No product data to export'); return; }
+  const rows = [['Rank', 'Product Name', 'Category', 'Price (฿)', 'Units Sold', 'Revenue (฿)']];
+  _cachedTopProducts.forEach((p, i) => {
+    rows.push([i + 1, p.productName || p.name, p.category, p.price || 0, p.totalQty || 0, p.totalRevenue || 0]);
+  });
+  _downloadCSV(rows, `glowtime-top-products-${new Date().toISOString().slice(0, 10)}.csv`);
+  showToast('📦 Top products exported as CSV');
+}
+
+function _downloadCSV(rows, filename) {
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Load Dashboard from API (with fallback) ───────────────────
+async function loadDashboardFromAPI() {
+  if (!window.GlowtimeAdminAPI) {
+    _loadFallbackData();
+    return;
+  }
+
+  // Run all requests in parallel
+  const [salesData, stockData, ordersData] = await Promise.allSettled([
+    window.GlowtimeAdminAPI.Reports.getSales(),
+    window.GlowtimeAdminAPI.Reports.getStock(),
+    window.GlowtimeAdminAPI.Orders.list(),
+  ]);
+
+  // ── Sales Report ─────────────────────────────────────
+  const sales = salesData.status === 'fulfilled' ? salesData.value : null;
+  if (sales) {
+    const revEl     = document.getElementById('statTotalRevenue');
+    const ordEl     = document.getElementById('statTotalOrders');
+    const revMetaEl = document.getElementById('statTotalRevenueMeta');
+    const ordMetaEl = document.getElementById('statTotalOrdersMeta');
+
+    if (revEl) animateCounter(revEl, Number(sales.totalRevenue || 0), '฿');
+    if (ordEl) animateCounter(ordEl, Number(sales.totalOrders || 0));
+    if (revMetaEl) revMetaEl.textContent = `Delivered: ${sales.deliveredCount || 0} | Shipping: ${sales.shippingCount || 0}`;
+    if (ordMetaEl) ordMetaEl.textContent = `Confirmed: ${sales.confirmedCount || 0}`;
+
+    // Top Products from API
+    if (Array.isArray(sales.topProducts) && sales.topProducts.length > 0) {
+      renderTopProducts(sales.topProducts);
+    } else {
+      renderTopProducts(MOCK_TOP_PRODUCTS);
+    }
+  } else {
+    // Fallback counters from mock
+    const d = CHART_DATA['7D'];
+    const revEl = document.getElementById('statTotalRevenue');
+    const ordEl = document.getElementById('statTotalOrders');
+    if (revEl) animateCounter(revEl, d.totalRevenue, '฿');
+    if (ordEl) animateCounter(ordEl, d.totalOrders);
+    const revMetaEl = document.getElementById('statTotalRevenueMeta');
+    if (revMetaEl) revMetaEl.textContent = d.statChange;
+    renderTopProducts(MOCK_TOP_PRODUCTS);
+  }
+
+  // ── Stock Report ──────────────────────────────────────
+  const stock = stockData.status === 'fulfilled' ? stockData.value : null;
+  if (stock) {
+    const lowStockEl  = document.getElementById('statLowStock');
+    const lowMetaEl   = document.getElementById('statLowStockMeta');
+
+    if (lowStockEl) animateCounter(lowStockEl, Number(stock.lowStockProducts || 0), '', ' Products');
+    if (lowMetaEl) lowMetaEl.textContent = `Out of stock: ${stock.outOfStock || 0} items`;
+
+    const lowItems = (stock.products || []).filter(p => p.status === 'low' || p.status === 'out');
+    renderLowStockList(lowItems.length > 0 ? lowItems : MOCK_LOW_STOCK);
+  } else {
+    const lowStockEl = document.getElementById('statLowStock');
+    const lowMetaEl  = document.getElementById('statLowStockMeta');
+    if (lowStockEl) animateCounter(lowStockEl, MOCK_LOW_STOCK.length, '', ' Products');
+    if (lowMetaEl) lowMetaEl.textContent = 'Reorder replenishment needed';
+    renderLowStockList(MOCK_LOW_STOCK);
+  }
+
+  // ── Recent Orders ─────────────────────────────────────
+  const orders = ordersData.status === 'fulfilled' ? ordersData.value : null;
+  if (Array.isArray(orders) && orders.length > 0) {
+    renderRecentOrders(orders);
+  } else {
+    renderRecentOrders(MOCK_RECENT_ORDERS);
+  }
+
+  // ── Customers (mock fallback — no endpoint yet) ───────
+  const custEl     = document.getElementById('statTotalCustomers');
+  const custMetaEl = document.getElementById('statTotalCustomersMeta');
+  if (custEl) animateCounter(custEl, 1102);
+  if (custMetaEl) custMetaEl.textContent = '▲ +18 members this week';
+}
+
+function _loadFallbackData() {
+  const d = CHART_DATA['7D'];
+  animateCounter(document.getElementById('statTotalRevenue'), d.totalRevenue, '฿');
+  animateCounter(document.getElementById('statTotalOrders'),  d.totalOrders);
+  animateCounter(document.getElementById('statTotalCustomers'), 1102);
+  animateCounter(document.getElementById('statLowStock'), MOCK_LOW_STOCK.length, '', ' Products');
+
+  const revMetaEl  = document.getElementById('statTotalRevenueMeta');
+  const ordMetaEl  = document.getElementById('statTotalOrdersMeta');
+  const custMetaEl = document.getElementById('statTotalCustomersMeta');
+  const lowMetaEl  = document.getElementById('statLowStockMeta');
+
+  if (revMetaEl)  revMetaEl.textContent  = d.statChange;
+  if (ordMetaEl)  ordMetaEl.textContent  = '▲ +42 orders today';
+  if (custMetaEl) custMetaEl.textContent = '▲ +18 members this week';
+  if (lowMetaEl)  lowMetaEl.textContent  = 'Reorder replenishment needed';
+
+  renderTopProducts(MOCK_TOP_PRODUCTS);
+  renderRecentOrders(MOCK_RECENT_ORDERS);
+  renderLowStockList(MOCK_LOW_STOCK);
+}
+
+// ── DOM Load Trigger ──────────────────────────────────────────
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initDashboardCharts();
+    loadDashboardFromAPI();
+  });
+} else {
+  initDashboardCharts();
+  loadDashboardFromAPI();
+
 }
