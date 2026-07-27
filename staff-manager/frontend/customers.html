@@ -13,7 +13,7 @@
 <!-- ── AUTH LOCK OVERLAY ── -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card">
-    <span class="auth-badge">SkincareShop · Admin Protection</span>
+    <span class="auth-badge">GLOWTIME · Admin Protection</span>
     <h2 class="auth-title">Admin Authentication</h2>
     <p class="auth-desc">Please sign in to access the admin system</p>
     <form onsubmit="handleAdminLogin(event)">
@@ -58,7 +58,7 @@
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="customersTableBody">
             <tr>
               <td><strong>#USR-101</strong></td>
               <td><strong>ศิรินทร์ภา วงศ์อุบล</strong><br/><span style="font-size:0.68rem; color:#777;">customer@glowtime.com</span></td>
@@ -86,7 +86,7 @@
     <div class="content-card">
       <div class="card-header">
         <h3 class="card-title">Review Moderation &amp; Q&amp;A</h3>
-        <span class="status-badge badge-warning">2 Reviews Pending Approval</span>
+        <span class="status-badge badge-warning" id="custPendingReviewBadge">1 Review Pending Approval</span>
       </div>
 
       <div class="table-responsive">
@@ -102,15 +102,15 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
+            <tr id="custReviewRow-1">
               <td>22 Jul 2026<br/><strong>ศิรินทร์ภา วงศ์อุบล</strong></td>
               <td>Hyaluronic Acid Serum 30ml</td>
               <td>★★★★★ (5/5)</td>
-              <td>"Skin felt noticeably softer and more hydrated. No irritation at all — perfect for sensitive skin!"</td>
-              <td><span class="status-badge badge-warning">Pending Review</span></td>
-              <td>
-                <button class="btn-dark-sm" style="background:var(--status-success);" onclick="showToast('Review approved and published!')">Approve</button>
-                <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="showToast('Review hidden')">Hide</button>
+              <td>"ผิวรู้สึกนุ่มและชุ่มชื้นขึ้นเห็นได้ชัดเลยค่ะ ไม่แพ้เลยสักครั้ง เหมาะมากกับผิวแพ้ง่าย แนะนำค่ะ!"</td>
+              <td><span class="status-badge badge-warning" id="custReviewStatus-1">Pending Review</span></td>
+              <td id="custReviewAction-1">
+                <button class="btn-dark-sm" style="background:var(--status-success);" onclick="approveCustomerReview(1)">Approve</button>
+                <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="hideCustomerReview(1)">Hide</button>
               </td>
             </tr>
           </tbody>
@@ -172,9 +172,15 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<script src="js/api.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/topbar.js"></script>
+<script src="js/sidebar.js"></script>
+
 <script>
-const customersData = {
+let customersData = {
   101: {
+    id: 101,
     name: 'ศิรินทร์ภา วงศ์อุบล',
     email: 'customer@glowtime.com',
     skinProfile: 'Sensitive / Redness',
@@ -189,6 +195,7 @@ const customersData = {
     ]
   },
   102: {
+    id: 102,
     name: 'เจนนิสา อนันต์',
     email: 'jane@glowtime.com',
     skinProfile: 'Oily / Acne-prone',
@@ -204,12 +211,69 @@ const customersData = {
   }
 };
 
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load users from API if available
+  if (window.GlowtimeAdminAPI) {
+    try {
+      const apiUsers = await window.GlowtimeAdminAPI.Users.list();
+      if (apiUsers && apiUsers.length > 0) {
+        renderCustomersFromAPI(apiUsers);
+      }
+    } catch (e) {
+      console.warn('[customers.html] API fetch fallback to mock');
+    }
+  }
+});
+
+function renderCustomersFromAPI(users) {
+  const tbody = document.getElementById('customersTableBody');
+  if (!tbody) return;
+
+  const customersOnly = users.filter(u => u.role === 'customer' || !u.role);
+  if (customersOnly.length === 0) return;
+
+  tbody.innerHTML = customersOnly.map(u => {
+    const id = u.id;
+    const skinType = u.profile?.skinType || 'Sensitive';
+    const tier = u.tier || 'Silver Member';
+    const points = u.points ? `${u.points} pts` : '500 pts';
+    const spend = u.spend ? `฿${u.spend.toLocaleString()}` : '฿2,500';
+
+    // Store in data map for viewCustomer modal
+    customersData[id] = {
+      id,
+      name: u.username || u.name || 'Customer',
+      email: u.email || 'customer@glowtime.com',
+      skinProfile: skinType,
+      tier,
+      tierClass: tier.includes('Gold') ? 'badge-success' : 'badge-info',
+      points,
+      spend,
+      orders: u.orders || [
+        { id: `#ORD-07${id}-001`, date: '20 Jul 2026', items: 'Hydrating Serum × 1', total: '฿590', status: 'Delivered', statusClass: 'badge-success' }
+      ]
+    };
+
+    return `
+      <tr>
+        <td><strong>#USR-${id}</strong></td>
+        <td><strong>${u.username}</strong><br/><span style="font-size:0.68rem; color:#777;">${u.email}</span></td>
+        <td><span class="status-badge badge-warning">${skinType}</span></td>
+        <td><span class="status-badge ${tier.includes('Gold') ? 'badge-success' : 'badge-info'}">${tier}</span></td>
+        <td><strong>${points}</strong></td>
+        <td>${spend}</td>
+        <td><button class="btn-ghost-sm" onclick="viewCustomer(${id})">View History</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
 function viewCustomer(id) {
   const c = customersData[id];
   if (!c) return;
 
   document.getElementById('custModalTitle').innerText = 'Customer Profile — ' + c.name;
-  document.getElementById('custAvatar').innerText = c.name.slice(0, 2);
+  document.getElementById('custAvatar').innerText = c.name.slice(0, 2).toUpperCase();
   document.getElementById('custName').innerText = c.name;
   document.getElementById('custEmail').innerText = c.email;
   document.getElementById('custPoints').innerText = c.points;
@@ -232,11 +296,43 @@ function viewCustomer(id) {
 
   openModal('modalCustomer');
 }
-</script>
 
-<script src="js/api.js"></script>
-<script src="js/shared.js"></script>
-<script src="js/topbar.js"></script>
-<script src="js/sidebar.js"></script>
+function approveCustomerReview(id) {
+  const statusEl = document.getElementById(`custReviewStatus-${id}`);
+  const actionEl = document.getElementById(`custReviewAction-${id}`);
+  const badgeEl = document.getElementById('custPendingReviewBadge');
+
+  if (statusEl) {
+    statusEl.className = 'status-badge badge-success';
+    statusEl.textContent = 'Approved';
+  }
+  if (actionEl) {
+    actionEl.innerHTML = `<button class="btn-ghost-sm" onclick="hideCustomerReview(${id})">👁 Hide</button>`;
+  }
+  if (badgeEl) {
+    badgeEl.className = 'status-badge badge-success';
+    badgeEl.textContent = 'All Reviews Moderated ✅';
+  }
+  showToast('✅ รีวิวได้รับการอนุมัติเรียบร้อย');
+}
+
+function hideCustomerReview(id) {
+  const row = document.getElementById(`custReviewRow-${id}`);
+  const statusEl = document.getElementById(`custReviewStatus-${id}`);
+  const actionEl = document.getElementById(`custReviewAction-${id}`);
+
+  if (statusEl) {
+    statusEl.className = 'status-badge badge-danger';
+    statusEl.textContent = 'Hidden';
+  }
+  if (actionEl) {
+    actionEl.innerHTML = `<button class="btn-dark-sm" style="background:var(--status-success);" onclick="approveCustomerReview(${id})">Approve</button>`;
+  }
+  if (row) {
+    row.style.opacity = '0.4';
+  }
+  showToast('🙈 ซ่อนรีวิวเรียบร้อย');
+}
+</script>
 </body>
 </html>

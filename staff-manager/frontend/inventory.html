@@ -4,45 +4,59 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory &amp; Batches — GLOWTIME Staff &amp; Admin</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <meta name="description" content="GLOWTIME Admin — Track batch/lot numbers, expiry warnings, suppliers, and restock"/>
   <script>if(localStorage.getItem('adminLoggedIn')==='true'||sessionStorage.getItem('adminLoggedIn')==='true')document.documentElement.classList.add('admin-logged-in');</script>
   <link rel="stylesheet" href="css/admin.css"/>
 </head>
 <body>
 
-<!-- ── AUTH LOCK OVERLAY ── -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card">
-    <span class="auth-badge">SkincareShop · Admin Protection</span>
+    <span class="auth-badge">GLOWTIME · Admin Protection</span>
     <h2 class="auth-title">Admin Authentication</h2>
-    <p class="auth-desc">Please sign in to access the admin system</p>
+    <p class="auth-desc">กรุณาลงชื่อเข้าใช้เพื่อเข้าสู่ระบบ</p>
     <form onsubmit="handleAdminLogin(event)">
-      <div class="form-group">
-        <label>Username / Email</label>
-        <input type="text" id="adminUser" class="form-control" value="admin" required placeholder="admin@skincareshop.com">
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="adminPass" class="form-control" value="password123" required>
-      </div>
+      <div class="form-group"><label>Username / Email</label>
+        <input type="text" id="adminUser" class="form-control" value="admin" required></div>
+      <div class="form-group"><label>Password</label>
+        <input type="password" id="adminPass" class="form-control" value="password123" required></div>
       <button type="submit" class="btn-submit">Sign In to Dashboard</button>
     </form>
   </div>
 </div>
 
-<!-- ── MAIN LAYOUT ── -->
 <div class="admin-container">
-
   <aside class="sidebar" id="sidebar"></aside>
 
   <main class="main-content">
-    <header class="topbar" data-title="Inventory &amp; Batches" data-sub="Track batch/lot numbers, expiry warnings, suppliers, and cost price"></header>
+    <header class="topbar"
+      data-title="Inventory &amp; Batches"
+      data-sub="Track batch/lot numbers, expiry warnings, suppliers, and cost price">
+    </header>
 
-    <!-- BATCH & LOT TRACEABILITY TABLE -->
+    <!-- STAT CARDS -->
+    <div class="stats-grid" id="inventoryStats" style="margin-bottom:2rem;"></div>
+
+    <!-- INVENTORY TABLE -->
     <div class="content-card">
       <div class="card-header">
-        <h3 class="card-title">Inventory &amp; Batches</h3>
-        <button class="btn-dark-sm" onclick="showToast('Opening Receive New Lot Batch form...')">+ Receive New Lot</button>
+        <div>
+          <h3 class="card-title">Batch &amp; Lot Traceability</h3>
+          <p style="font-size:0.75rem; color:var(--gray); margin-top:0.2rem;">Stock levels, expiry dates, and restock management</p>
+        </div>
+        <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+          <select class="form-control" id="inventoryStatusFilter" style="width:140px; padding:0.5rem; font-size:0.78rem;">
+            <option value="">All Status</option>
+            <option value="ok">In Stock</option>
+            <option value="low">Low Stock</option>
+            <option value="out">Out of Stock</option>
+          </select>
+          <div class="search-box" style="width:200px;">
+            <span style="color:var(--gray); font-size:0.8rem;">&#x2315;</span>
+            <input type="text" id="inventorySearch" placeholder="Search product, lot...">
+          </div>
+          <button class="btn-dark-sm" onclick="showToast('Receive New Lot form coming soon!')">+ Receive New Lot</button>
+        </div>
       </div>
 
       <div class="table-responsive">
@@ -50,42 +64,53 @@
           <thead>
             <tr>
               <th>Batch / Lot No.</th>
-              <th>Product Name</th>
+              <th>Product</th>
               <th>Supplier</th>
               <th>Cost Price</th>
-              <th>Qty Received</th>
+              <th>Stock / Received</th>
               <th>MFG Date</th>
               <th>EXP Date</th>
               <th>Lot Status</th>
+              <th>Action</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><strong>LOT-B8842</strong></td>
-              <td>Hydrating Serum (ID: #1001)</td>
-              <td>GLOWTIME OEM Co., Ltd.</td>
-              <td>฿180 / unit</td>
-              <td>500 units</td>
-              <td>01/06/2025</td>
-              <td>30/06/2028</td>
-              <td><span class="status-badge badge-success">In Stock</span></td>
-            </tr>
-            <tr>
-              <td><strong>LOT-C4410</strong></td>
-              <td>Daily SPF 50+ (ID: #1007)</td>
-              <td>GLOWTIME Lab Ltd.</td>
-              <td>฿150 / unit</td>
-              <td>5 units</td>
-              <td>15/05/2025</td>
-              <td>31/05/2028</td>
-              <td><span class="status-badge badge-danger">Low Stock (5 units)</span></td>
-            </tr>
+          <tbody id="inventoryTableBody">
+            <tr><td colspan="9"><div class="skeleton-row"></div></td></tr>
+            <tr><td colspan="9"><div class="skeleton-row"></div></td></tr>
+            <tr><td colspan="9"><div class="skeleton-row"></div></td></tr>
           </tbody>
         </table>
       </div>
     </div>
-
   </main>
+</div>
+
+<!-- MODAL: Restock -->
+<div class="modal-backdrop" id="modalRestock">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Restock Product</h3>
+      <button class="modal-close" type="button" onclick="closeModal('modalRestock')">✕</button>
+    </div>
+    <form onsubmit="saveRestock(event)">
+      <div style="background:var(--cream); border-radius:6px; padding:1rem; margin-bottom:1.2rem;">
+        <div style="font-weight:700;" id="restockProductName">—</div>
+        <div style="font-size:0.78rem; color:var(--gray); margin-top:4px;">Current Stock: <strong id="restockCurrentQty">—</strong></div>
+      </div>
+      <div class="form-group">
+        <label>Quantity to Add <span style="color:var(--status-danger);">*</span></label>
+        <input type="number" id="restockQty" class="form-control" min="1" required placeholder="e.g. 100">
+      </div>
+      <div class="form-group">
+        <label>Supplier (optional)</label>
+        <input type="text" class="form-control" placeholder="GLOWTIME OEM Co., Ltd.">
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.6rem; margin-top:1rem;">
+        <button type="button" class="btn-ghost-sm" onclick="closeModal('modalRestock')">Cancel</button>
+        <button type="submit" class="btn-dark-sm">Confirm Restock</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
@@ -94,5 +119,6 @@
 <script src="js/shared.js"></script>
 <script src="js/topbar.js"></script>
 <script src="js/sidebar.js"></script>
+<script src="js/inventory.js"></script>
 </body>
 </html>

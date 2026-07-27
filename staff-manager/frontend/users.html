@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Users &amp; Roles — GLOWTIME Staff &amp; Admin</title>
+  <meta name="description" content="GLOWTIME Admin — จัดการบัญชีผู้ใช้ บทบาท และสิทธิ์การเข้าถึง"/>
+  <script>if(localStorage.getItem('adminLoggedIn')==='true'||sessionStorage.getItem('adminLoggedIn')==='true')document.documentElement.classList.add('admin-logged-in');</script>
+  <link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <span class="auth-badge">GLOWTIME · Admin Protection</span>
+    <h2 class="auth-title">Admin Authentication</h2>
+    <p class="auth-desc">กรุณาลงชื่อเข้าใช้เพื่อเข้าสู่ระบบ</p>
+    <form onsubmit="handleAdminLogin(event)">
+      <div class="form-group"><label>Username / Email</label>
+        <input type="text" id="adminUser" class="form-control" value="admin" required></div>
+      <div class="form-group"><label>Password</label>
+        <input type="password" id="adminPass" class="form-control" value="password123" required></div>
+      <button type="submit" class="btn-submit">Sign In to Dashboard</button>
+    </form>
+  </div>
+</div>
+
+<div class="admin-container">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="topbar"
+      data-title="Users &amp; Roles"
+      data-sub="จัดการบัญชีผู้ใช้ กำหนดบทบาท และสิทธิ์การเข้าถึงระบบ">
+    </header>
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid" id="userStats" style="margin-bottom:2rem;"></div>
+
+    <!-- USER TABLE -->
+    <div class="content-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">User Accounts</h3>
+          <p style="font-size:0.75rem; color:var(--gray); margin-top:0.2rem;">จัดการสิทธิ์และบทบาทของผู้ใช้ทั้งหมด</p>
+        </div>
+        <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+          <select class="form-control" id="userRoleFilter" style="width:140px; padding:0.5rem; font-size:0.78rem;">
+            <option value="">All Roles</option>
+            <option value="customer">Customer</option>
+            <option value="staff">Staff</option>
+            <option value="manager">Manager</option>
+          </select>
+          <div class="search-box" style="width:200px;">
+            <span style="color:var(--gray); font-size:0.8rem;">&#x2315;</span>
+            <input type="text" id="userSearch" placeholder="Search username, email...">
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>User</th>
+              <th>Skin Type</th>
+              <th>Phone</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody">
+            <tr><td colspan="7"><div class="skeleton-row"></div></td></tr>
+            <tr><td colspan="7"><div class="skeleton-row"></div></td></tr>
+            <tr><td colspan="7"><div class="skeleton-row"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: Edit Role -->
+<div class="modal-backdrop" id="modalEditRole">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit User Role</h3>
+      <button class="modal-close" type="button" onclick="closeModal('modalEditRole')">✕</button>
+    </div>
+    <form onsubmit="saveUserRole(event)">
+
+      <div style="background:var(--cream); border-radius:6px; padding:1rem; margin-bottom:1.5rem;">
+        <div style="font-weight:700; font-size:0.9rem;" id="editRoleUsername">—</div>
+        <div style="font-size:0.78rem; color:var(--gray); margin-top:2px;" id="editRoleEmail">—</div>
+        <div style="margin-top:0.6rem;">
+          Current Role: <span class="status-badge badge-info" id="editRoleCurrent">—</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>New Role <span style="color:var(--status-danger);">*</span></label>
+        <select class="form-control" id="editRoleSelect" required>
+          <option value="customer">👤 Customer — ลูกค้าทั่วไป</option>
+          <option value="staff">🏪 Staff — ดูและจัดการออเดอร์</option>
+          <option value="manager">👑 Manager — สิทธิ์เต็ม</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(192,57,43,0.06); border:1px solid rgba(192,57,43,0.2); border-radius:6px; padding:0.8rem; margin-bottom:1.2rem; font-size:0.78rem; color:var(--status-danger);">
+        ⚠️ การเปลี่ยน Role จะมีผลทันที กรุณาตรวจสอบก่อนบันทึก
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
+        <button type="button" class="btn-ghost-sm" onclick="closeModal('modalEditRole')">Cancel</button>
+        <button type="submit" class="btn-dark-sm">Save Role</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/api.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/topbar.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/users.js"></script>
+</body>
+</html>
