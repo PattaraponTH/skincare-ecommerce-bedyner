@@ -384,6 +384,7 @@ const AdminCoupons = {
   },
 };
 
+
 // ── Admin Marketing / Promotions Module ──────────────────────────
 // Endpoint: /api/manager/promotions (in-memory store)
 const AdminMarketing = {
@@ -471,6 +472,19 @@ window.GlowtimeAdminAPI = {
   Settings:     AdminSettings,    // ← ใหม่
   Inventory:    AdminInventory,   // ← ใหม่
   RevenueChart: AdminRevenueChart,// ← ใหม่
+
+// Export to Global Scope
+window.GlowtimeAdminAPI = {
+  Auth:       AdminAuth,
+  Products:   AdminProducts,
+  Orders:     AdminOrders,
+  Reports:    AdminReports,
+  Users:      AdminUsers,
+  Shipments:  AdminShipments,
+  Stock:      AdminStock,
+  Categories: AdminCategories,
+  Coupons:    AdminCoupons,
+
   getAdminToken,
   getAdminUser,
   apiBase: ADMIN_API_BASE,
