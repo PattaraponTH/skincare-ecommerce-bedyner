@@ -410,8 +410,15 @@ sequenceDiagram
 | หน้าพนักงาน (Staff Dashboard) | รายการคำสั่งซื้อใหม่ จัดการสต็อก อัปเดตสถานะจัดส่ง |
 | หน้าผู้จัดการ (Manager Dashboard) | กราฟยอดขาย รายงานสินค้าคงเหลือ จัดการสินค้า |
 
-> หมายเหตุ: แนะนำให้ออกแบบ Wireframe ฉบับเต็มด้วย Figma ตาม Persona ที่กำหนดไว้ในข้อ 4 ก่อนเริ่มพัฒนา Frontend จริง
+### 🎨 UI/UX Design (Figma)
 
+* **Customers:**  
+  [![Wireframe & Prototype](https://img.shields.io/badge/Figma-Wireframe%20%26%20Prototype-F24E1E?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/yh1TgiYnqtnL4t2I1j0Bpw/wireframe-prototype-customers?node-id=0-1&t=EhBTemZMMOXc01CZ-1)
+
+* **Staff / Admin:**  
+  [![Wireframe](https://img.shields.io/badge/Figma-Wireframe-0A84FF?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/rD2No3Bt6Rz36HQambVqyj/Admin-Page-Wireframe?node-id=0-1&t=iQZUZjznUiNK0k5u-1)
+  [![Prototype](https://img.shields.io/badge/Figma-Prototype-30D158?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/tWph3aiBJfKA9EdTEexGVK/Admin-Page-Prototype?node-id=0-1&t=P5oAiAlC4Xjuqzqn-1)
+  
 ---
 
 ## 11. System Architecture
@@ -770,6 +777,7 @@ erDiagram
 | TC-17 | ดูรายงานสินค้าคงเหลือ | กดดูรายงาน Stock Report | แสดงจำนวนสต็อกสินค้าทุกรายการถูกต้อง |
 | TC-18 | ผู้จัดการแก้ไขข้อมูลสินค้า | แก้ไขราคาสินค้าและกดบันทึก | ราคาสินค้าอัปเดตในหน้าสินค้าทันที |
 
+> [📄 คลิกดูเอกสาร PDF ฉบับเต็ม](./docs/UAT.pdf)
 ---
 
 ## 16. Deployment Architecture
