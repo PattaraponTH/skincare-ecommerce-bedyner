@@ -13,7 +13,7 @@
 <!-- ── AUTH LOCK OVERLAY ── -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card">
-    <span class="auth-badge">GLOWTIME · Admin Protection</span>
+    <span class="auth-badge">SkincareShop · Admin Protection</span>
     <h2 class="auth-title">Admin Authentication</h2>
     <p class="auth-desc">Please sign in to access the admin system</p>
     <form onsubmit="handleAdminLogin(event)">
@@ -41,14 +41,8 @@
     <!-- CUSTOMER REVIEWS MODERATION -->
     <div class="content-card">
       <div class="card-header">
-        <div>
-          <h3 class="card-title">Customer Reviews</h3>
-          <p style="font-size:0.75rem; color:var(--gray); margin-top:0.2rem;">จัดการและตรวจสอบรีวิวจากลูกค้า</p>
-        </div>
-        <div style="display:flex; gap:0.8rem; align-items:center;">
-          <span class="status-badge badge-warning" id="pendingReviewBadge">1 Review Pending Approval</span>
-          <button class="btn-dark-sm" onclick="loadReviews(); showToast('Reviews refreshed')">Refresh Reviews</button>
-        </div>
+        <h3 class="card-title">Customer Reviews</h3>
+        <button class="btn-dark-sm" onclick="showToast('Reviews refreshed successfully')">Refresh Reviews</button>
       </div>
 
       <div class="table-responsive">
@@ -63,38 +57,38 @@
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody id="reviewTableBody">
-            <tr data-review-id="REV-1001" data-review-status="approved">
+          <tbody>
+            <tr>
               <td><span style="color:#D4AF37; font-weight:bold;">★ 5.0</span></td>
               <td><strong>Hydrating Serum</strong> (#1001)</td>
               <td>นภัสสร ใส่ใจผิว <div style="font-size:0.7rem; color:#777;">Dry / Sensitive</div></td>
-              <td>"ใช้แล้วผิวชุ่มชื้นขึ้นเห็นได้ชัดเลยค่ะ ไม่แสบ ไม่ระคายเคือง เหมาะมากสำหรับคนผิวแพ้ง่าย ใช้ครบ 2 อาทิตย์แล้วผิวเนียนขึ้นมากเลยค่ะ"</td>
-              <td><span class="status-badge badge-success review-status-badge">Approved</span></td>
-              <td class="review-actions">
-                <button class="btn-ghost-sm" onclick="hideReview(this, 'REV-1001')">👁 Hide</button>
-                <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="deleteReview(this, 'REV-1001')">Delete</button>
+              <td>"Works amazingly well — no irritation at all. Skin felt noticeably more hydrated after 2 weeks of use."</td>
+              <td><span class="status-badge badge-success">Approved</span></td>
+              <td>
+                <button class="btn-ghost-sm" onclick="showToast('Review hidden from product page')">Hide</button>
+                <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="showToast('Review deleted')">Delete</button>
               </td>
             </tr>
-            <tr data-review-id="REV-1007" data-review-status="approved">
+            <tr>
               <td><span style="color:#D4AF37; font-weight:bold;">★ 4.0</span></td>
               <td><strong>Daily SPF 50+</strong> (#1007)</td>
               <td>ศิรินทร์ภา วงศ์อุบล <div style="font-size:0.7rem; color:#777;">Combination</div></td>
-              <td>"ครีมกันแดดเนื้อบางเบามากค่ะ ทาแล้วไม่ขาว ไม่เหนียว ใส่ใต้เมคอัพได้เลย ส่งช้ากว่ากำหนด 1 วันนิดหน่อยแต่ก็โอเคค่ะ"</td>
-              <td><span class="status-badge badge-success review-status-badge">Approved</span></td>
-              <td class="review-actions">
-                <button class="btn-ghost-sm" onclick="hideReview(this, 'REV-1007')">👁 Hide</button>
-                <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="deleteReview(this, 'REV-1007')">Delete</button>
+              <td>"Lightweight formula, no white cast at all. Delivery was 1 day later than expected though."</td>
+              <td><span class="status-badge badge-success">Approved</span></td>
+              <td>
+                <button class="btn-ghost-sm" onclick="showToast('Review hidden from product page')">Hide</button>
+                <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="showToast('Review deleted')">Delete</button>
               </td>
             </tr>
-            <tr data-review-id="REV-1002" data-review-status="pending">
+            <tr>
               <td><span style="color:#D4AF37; font-weight:bold;">★ 5.0</span></td>
               <td><strong>Renewal Cream</strong> (#1002)</td>
               <td>ภัทรพงศ์ อนันต์ <div style="font-size:0.7rem; color:#777;">Normal</div></td>
-              <td>"ทาก่อนนอนแล้วตื่นเช้ามาผิวนุ่มขึ้นมากเลยครับ ความชุ่มชื้นดีมาก กลิ่นหอมอ่อนๆ ไม่แรง ชอบมากแนะนำเลยครับ"</td>
-              <td><span class="status-badge badge-warning review-status-badge">Pending Review</span></td>
-              <td class="review-actions">
-                <button class="btn-dark-sm" onclick="approveReview(this, 'REV-1002')">Approve</button>
-                <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="deleteReview(this, 'REV-1002')">Delete</button>
+              <td>"Applied before bed and woke up with visibly plumper, softer skin. Love the subtle scent too!"</td>
+              <td><span class="status-badge badge-warning">Pending Moderation</span></td>
+              <td>
+                <button class="btn-dark-sm" onclick="showToast('Review approved and published!')">Approve</button>
+                <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="showToast('Review deleted')">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -167,7 +161,7 @@
           </thead>
           <tbody>
             <tr>
-              <td><strong>5 วิธีเสริมความแข็งแกร่งให้ Skin Barrier สำหรับผิวบอบบางแพ้ง่าย</strong></td>
+              <td><strong>5 Ways to Strengthen Your Skin Barrier for Sensitive Skin</strong></td>
               <td>Sensitive Skin Guide</td>
               <td>Visada K.</td>
               <td>4,250 views</td>
@@ -186,15 +180,12 @@
 <script src="js/api.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/topbar.js"></script>
-<script src="js/sidebar.js"></script><<<<<<< main
+<script src="js/sidebar.js"></script>
 <script>
   // ── Role Gate: content.html → เฉพาะ manager ──
   document.addEventListener('DOMContentLoaded', () => {
     applyRoleGate(['manager']); // ไม่มีสิทธิ์จะซ่อนเนื้อหาและแสดงการ์ด 🔒
   });
 </script>
-
-<script src="js/content.js"></script>
-
 </body>
 </html>

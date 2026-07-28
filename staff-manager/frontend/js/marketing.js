@@ -1,7 +1,6 @@
 /**
  * GLOWTIME — Marketing & Promotions (js/marketing.js)
  * ──────────────────────────────────────────────────────
-
  * Bundle Sets  → เชื่อม API จริงแล้ว: /api/manager/promotions (GET/POST/PUT/DELETE, in-memory store)
  * Flash Sales  → ยังไม่มี endpoint รองรับใน backend (ไม่มี table/route) → ใช้ mock data ต่อไปก่อน
  * Cart Recovery→ ยังไม่มี endpoint รองรับใน backend (ไม่มีข้อมูลตะกร้าจริง) → ใช้ mock data ต่อไปก่อน
@@ -15,44 +14,6 @@
  */
 
 let bundlesList = []; // แคชข้อมูล promotions (type: 'bundle') ที่โหลดจาก API ไว้ใช้ edit/delete
-
- * Bundle sets CRUD + Flash sale timer + Cart recovery
- */
-
-// ── Mock Data ─────────────────────────────────────────
-let bundlesList = [
-  {
-    id: 1,
-    name: 'Calming Duo Set',
-    products: ['Hydrating Serum 30ml', 'Rose Barrier Cream 50g'],
-    regularPrice: 1280,
-    bundlePrice: 990,
-    sold: 48,
-    status: 'Active',
-    endDate: '2026-08-31'
-  },
-  {
-    id: 2,
-    name: 'Glow Starter Kit',
-    products: ['Gentle Cleanser 150ml', 'Niacinamide 10% Serum', 'Daily SPF 50+'],
-    regularPrice: 1530,
-    bundlePrice: 1190,
-    sold: 31,
-    status: 'Active',
-    endDate: '2026-09-15'
-  },
-  {
-    id: 3,
-    name: 'Oily Skin Rescue Pack',
-    products: ['Glow Mask 75g', 'Niacinamide 10%', 'Hydrating Mist'],
-    regularPrice: 1320,
-    bundlePrice: 999,
-    sold: 19,
-    status: 'Hidden',
-    endDate: '2026-07-31'
-  }
-];
-
 
 const flashSalesData = [
   { id: 1, product: 'Glow Mask 75g',     discount: 30, originalPrice: 450, salePrice: 315, stock: 15, sold: 28, endsIn: Date.now() + 4 * 3600000 },
@@ -69,7 +30,6 @@ const cartRecoveryData = {
   ]
 };
 
-
 // ── Bundle meta encode/decode (products + ราคา ฝังใน description) ─
 function encodeBundleMeta({ products, regularPrice, salePrice }) {
   return JSON.stringify({ products, regularPrice, salePrice });
@@ -83,9 +43,6 @@ function decodeBundleMeta(description) {
 }
 
 // ── Flash Sale Countdown Timers (mock) ─────────────────
-
-// ── Flash Sale Countdown Timers ────────────────────────
-
 const _timers = {};
 function startCountdown(id, endsIn, elId) {
   if (_timers[id]) clearInterval(_timers[id]);
@@ -101,7 +58,6 @@ function startCountdown(id, endsIn, elId) {
 }
 
 // ── Init ──────────────────────────────────────────────
-
 document.addEventListener('DOMContentLoaded', async () => {
   if (!applyRoleGate(['manager'])) return; // ← /api/manager/promotions → manager เท่านั้น
   await loadPromotions();
@@ -124,25 +80,11 @@ async function loadPromotions() {
   renderBundlesTable();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  renderMarketingStats();
-  renderBundlesTable();
-  renderFlashSales();
-  renderCartRecovery();
-});
-
-
 // ── Stats ─────────────────────────────────────────────
 function renderMarketingStats() {
   const activeBundles = bundlesList.filter(b => b.status === 'Active').length;
-
   const flashActive   = flashSalesData.length; // mock
   const cartValue     = cartRecoveryData.value; // mock
-
-  const totalBundleSold = bundlesList.reduce((s, b) => s + b.sold, 0);
-  const flashActive = flashSalesData.length;
-  const cartValue = cartRecoveryData.value;
-
 
   const el = document.getElementById('marketingStats');
   if (!el) return;
@@ -154,35 +96,21 @@ function renderMarketingStats() {
     </div>
     <div class="stat-card">
       <div class="stat-label">Bundle Units Sold</div>
-
       <div class="stat-value">-</div>
       <div class="stat-meta">ยังไม่มีระบบนับยอดขายต่อ bundle</div>
-
-      <div class="stat-value">${totalBundleSold}</div>
-      <div class="stat-meta">All time</div>
-
     </div>
     <div class="stat-card">
       <div class="stat-label">Flash Sales Live</div>
       <div class="stat-value" style="color:#C5A059;">${flashActive}</div>
-
       <div class="stat-meta">Demo data — no backend yet</div>
-
-      <div class="stat-meta">With countdown timer</div>
-
     </div>
     <div class="stat-card">
       <div class="stat-label">Abandoned Cart Value</div>
       <div class="stat-value" style="color:var(--status-danger);">฿${cartValue.toLocaleString()}</div>
-
       <div class="stat-meta">Demo data — no backend yet</div>
-
-      <div class="stat-meta">${cartRecoveryData.pending} carts pending</div>
-
     </div>
   `;
 }
-
 
 // ── Bundles Table (ข้อมูลจริงจาก /api/manager/promotions) ─
 function renderBundlesTable() {
@@ -213,28 +141,6 @@ function renderBundlesTable() {
         <td>-</td>
         <td>${b.endDate || '-'}</td>
         <td><span class="status-badge ${b.status === 'Active' ? 'badge-success' : 'badge-danger'}">${b.status || '-'}</span></td>
-
-// ── Bundles Table ─────────────────────────────────────
-function renderBundlesTable() {
-  const tbody = document.getElementById('bundlesTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = bundlesList.map(b => {
-    const saving = b.regularPrice - b.bundlePrice;
-    const pct    = Math.round(saving / b.regularPrice * 100);
-    return `
-      <tr>
-        <td>
-          <strong>${b.name}</strong>
-          <div style="font-size:0.7rem; color:var(--gray); margin-top:2px;">${b.products.join(' + ')}</div>
-        </td>
-        <td><span style="text-decoration:line-through; color:var(--gray);">฿${b.regularPrice.toLocaleString()}</span></td>
-        <td>
-          <strong style="color:var(--status-success);">฿${b.bundlePrice.toLocaleString()}</strong>
-          <span class="status-badge badge-success" style="margin-left:0.4rem;">Save ${pct}%</span>
-        </td>
-        <td><strong>${b.sold}</strong> sets</td>
-        <td>${b.endDate}</td>
-        <td><span class="status-badge ${b.status === 'Active' ? 'badge-success' : 'badge-danger'}">${b.status}</span></td>
         <td>
           <button class="btn-ghost-sm" onclick="editBundle(${b.id})">✏️ Edit</button>
           <button class="btn-ghost-sm" style="color:var(--status-danger);" onclick="deleteBundle(${b.id})">🗑</button>
@@ -244,11 +150,7 @@ function renderBundlesTable() {
   }).join('');
 }
 
-
 // ── Flash Sales (ยังเป็น mock — ไม่มี backend endpoint ให้เชื่อม) ─
-
-// ── Flash Sales ───────────────────────────────────────
-
 function renderFlashSales() {
   const el = document.getElementById('flashSaleList');
   if (!el) return;
@@ -278,18 +180,10 @@ function renderFlashSales() {
     </div>
   `).join('');
 
-
   flashSalesData.forEach(f => startCountdown(f.id, f.endsIn, `countdown-${f.id}`));
 }
 
 // ── Cart Recovery (ยังเป็น mock — ไม่มี backend endpoint ให้เชื่อม) ─
-
-  // Start all countdowns
-  flashSalesData.forEach(f => startCountdown(f.id, f.endsIn, `countdown-${f.id}`));
-}
-
-// ── Cart Recovery ─────────────────────────────────────
-
 function renderCartRecovery() {
   const tbody = document.getElementById('cartRecoveryBody');
   if (!tbody) return;
@@ -307,11 +201,7 @@ function renderCartRecovery() {
   `).join('');
 }
 
-
 // ── Bundle CRUD (เชื่อม /api/manager/promotions จริง) ──
-
-// ── Bundle CRUD ───────────────────────────────────────
-
 function openCreateBundleModal() {
   document.getElementById('bundleModalTitle').textContent = 'Create Bundle Set';
   document.getElementById('editBundleId').value = '';
@@ -322,7 +212,6 @@ function openCreateBundleModal() {
 function editBundle(id) {
   const b = bundlesList.find(b => b.id === id);
   if (!b) return;
-
   const meta = decodeBundleMeta(b.description);
   document.getElementById('bundleModalTitle').textContent = `Edit: ${b.title}`;
   document.getElementById('editBundleId').value = id;
@@ -336,24 +225,9 @@ function editBundle(id) {
 }
 
 async function saveBundle(e) {
-
-  document.getElementById('bundleModalTitle').textContent = `Edit: ${b.name}`;
-  document.getElementById('editBundleId').value = id;
-  document.getElementById('bundleName').value = b.name;
-  document.getElementById('bundleProducts').value = b.products.join(', ');
-  document.getElementById('bundleRegularPrice').value = b.regularPrice;
-  document.getElementById('bundleSalePrice').value = b.bundlePrice;
-  document.getElementById('bundleEndDate').value = b.endDate;
-  document.getElementById('bundleStatus').value = b.status;
-  openModal('modalBundle');
-}
-
-function saveBundle(e) {
-
   e.preventDefault();
   const editId = document.getElementById('editBundleId').value;
   const isEdit = !!editId;
-
 
   const regularPrice = Number(document.getElementById('bundleRegularPrice').value) || null;
   const salePrice     = Number(document.getElementById('bundleSalePrice').value) || null;
@@ -410,43 +284,4 @@ async function deleteBundle(id) {
 // ── Send All Cart Recovery (mock) ──────────────────────
 function sendCartRecoveryAll() {
   showToast(`📧 Recovery email sent to all ${cartRecoveryData.pending} customers! (demo — ยังไม่มี backend)`);
-
-  const bundleData = {
-    id:           isEdit ? Number(editId) : Math.max(0, ...bundlesList.map(b => b.id)) + 1,
-    name:         document.getElementById('bundleName').value.trim(),
-    products:     document.getElementById('bundleProducts').value.split(',').map(s => s.trim()).filter(Boolean),
-    regularPrice: Number(document.getElementById('bundleRegularPrice').value),
-    bundlePrice:  Number(document.getElementById('bundleSalePrice').value),
-    endDate:      document.getElementById('bundleEndDate').value,
-    status:       document.getElementById('bundleStatus').value,
-    sold:         isEdit ? (bundlesList.find(b => b.id === Number(editId))?.sold || 0) : 0,
-  };
-
-  if (isEdit) {
-    const idx = bundlesList.findIndex(b => b.id === Number(editId));
-    if (idx !== -1) bundlesList[idx] = bundleData;
-  } else {
-    bundlesList.unshift(bundleData);
-  }
-
-  renderMarketingStats();
-  renderBundlesTable();
-  closeModal('modalBundle');
-  showToast(`Bundle "${bundleData.name}" ${isEdit ? 'updated' : 'created'} ✅`);
-}
-
-function deleteBundle(id) {
-  const b = bundlesList.find(b => b.id === id);
-  if (!b) return;
-  if (confirm(`Delete bundle "${b.name}"?`)) {
-    bundlesList = bundlesList.filter(b => b.id !== id);
-    renderMarketingStats();
-    renderBundlesTable();
-    showToast(`Bundle "${b.name}" deleted`);
-  }
-}
-
-// ── Send All Cart Recovery ────────────────────────────
-function sendCartRecoveryAll() {
-  showToast(`📧 Recovery email sent to all ${cartRecoveryData.pending} customers!`);
 }
